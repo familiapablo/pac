@@ -1,0 +1,3386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>PAC-MAN 2027*</title>
+  <meta name="description" content="The arcade legend rebuilt: arcade-perfect Classic, evolving 2027 mazes with power-ups, Battle against humanlike AI rivals and a Daily Run. Free, no sign-up, works offline.">
+  <meta name="theme-color" content="#07061a">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2307061a'/%3E%3Cpath d='M32 32 L56 18 A28 28 0 1 0 56 46 Z' fill='%23ffe14d'/%3E%3Ccircle cx='30' cy='18' r='4' fill='%2307061a'/%3E%3C/svg%3E">
+  <!-- The only external host is jsDelivr (fonts). Everything else is in this package. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/orbitron@5/700.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/orbitron@5/900.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/rubik@5/500.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/rubik@5/700.css" media="print" onload="this.media='all'">
+  <!-- critical sizing inline: the page always fills its window or iframe and never scrolls -->
+  <style>html,body{margin:0;width:100%;height:100%;overflow:hidden;position:fixed;inset:0;background:#07061a}</style>
+  <style>
+/* PAC-MAN 2027* — styles */
+:root {
+  --bg: #07061a; --panel: rgba(18, 16, 44, 0.92); --panel2: rgba(255, 255, 255, 0.06); --line: rgba(255, 255, 255, 0.1);
+  --ink: #f4f3ff; --muted: #a8a5cf; --yellow: #ffe14d; --cyan: #4ef2ff; --pink: #ff4fd8; --red: #ff3b5c; --green: #5dff9e; --violet: #9b7bff;
+  --display: 'Orbitron', 'Rubik', system-ui, sans-serif;
+  --text: 'Rubik', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; position: fixed; inset: 0; background: var(--bg); }
+body { color: var(--ink); font-family: var(--text); -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; touch-action: none; }
+button, input, select { font-family: inherit; color: inherit; }
+button { cursor: pointer; }
+input { user-select: text; -webkit-user-select: text; }
+:focus-visible { outline: 3px solid var(--cyan); outline-offset: 2px; }
+.hidden { display: none !important; }
+
+#app { position: fixed; inset: 0; overflow: hidden; }
+
+/* ---------- buttons ---------- */
+.btn {
+  border: 0; border-radius: 14px; padding: 11px 18px; font: 700 15px var(--text); letter-spacing: 0.02em;
+  background: var(--panel2); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); transition: transform 0.12s, box-shadow 0.15s, background 0.15s;
+}
+.btn:hover { transform: translateY(-1px); background: rgba(255, 255, 255, 0.1); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: 0.4; cursor: default; transform: none; }
+.btn.play {
+  font: 900 clamp(17px, 2.6vh, 22px) var(--display); letter-spacing: 0.12em; color: #1a1300; padding: clamp(10px, 1.8vh, 16px) clamp(34px, 6vw, 64px);
+  background: linear-gradient(180deg, #fff27a, #ffd21a); border-radius: 999px; box-shadow: 0 0 0 2px rgba(255, 225, 77, 0.35), 0 0 28px rgba(255, 210, 26, 0.45), 0 6px 0 #b88c00;
+}
+.btn.play:hover { background: linear-gradient(180deg, #fff59a, #ffdb3a); }
+.btn.cyan { background: linear-gradient(180deg, #7ff7ff, #23c8e0); color: #002229; box-shadow: 0 0 22px rgba(78, 242, 255, 0.35); }
+.btn.ghost { background: transparent; }
+.btn.small { padding: 7px 12px; font-size: 13px; border-radius: 10px; }
+.icon-btn {
+  position: relative; width: 42px; height: 42px; border-radius: 12px; border: 0; background: var(--panel2); box-shadow: inset 0 0 0 1px var(--line);
+  font-size: 18px; display: grid; place-items: center; transition: transform 0.12s, background 0.15s; flex: none;
+}
+.icon-btn:hover { background: rgba(255, 255, 255, 0.12); transform: translateY(-1px); }
+.icon-btn.small { width: 34px; height: 34px; font-size: 13px; }
+.icon-btn .dot { position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+/* ---------- stage ---------- */
+#stage { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: max(6px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
+#board-wrap { position: relative; flex: 1 1 auto; min-height: 0; width: 100%; display: grid; place-items: center; }
+#cv { display: block; border-radius: 10px; }
+.hud { width: 100%; max-width: var(--board-w, 560px); display: flex; align-items: center; gap: 10px; flex: none; }
+#hud-top { height: 46px; }
+#hud-bot { height: 40px; justify-content: space-between; }
+.hbox { flex: 1; min-width: 0; line-height: 1.05; }
+.hbox small { display: block; font: 700 10px var(--display); letter-spacing: 0.14em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hbox b { display: block; font: 900 clamp(15px, 2.6vh, 21px) var(--display); color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hbox.mid { text-align: center; }
+.hbox.mid b { color: var(--yellow); }
+.hbox.right { text-align: right; }
+.lives { display: flex; gap: 4px; min-width: 0; }
+.lives img { width: 22px; height: 22px; }
+.fruits { display: flex; gap: 2px; flex-direction: row-reverse; }
+.fruits img { width: 24px; height: 24px; }
+.powers { display: flex; gap: 6px; flex: 1; justify-content: center; min-width: 0; overflow: hidden; }
+.pchip { display: flex; align-items: center; gap: 4px; padding: 2px 8px 2px 2px; border-radius: 99px; background: var(--panel2); font: 700 12px var(--display); white-space: nowrap; }
+.pchip img { width: 22px; height: 22px; }
+.rchip { display: flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 99px; background: var(--panel2); font: 700 11px var(--display); white-space: nowrap; }
+.rchip i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.rchip.me { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5); }
+.combo { display: flex; align-items: center; gap: 6px; font: 900 14px var(--display); color: var(--yellow); }
+.combo i { display: block; width: 54px; height: 6px; border-radius: 9px; background: var(--panel2); overflow: hidden; }
+.combo em { display: block; height: 100%; background: linear-gradient(90deg, var(--yellow), var(--pink)); border-radius: 9px; }
+
+.banner {
+  position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; z-index: 5;
+  padding: 12px 22px; border-radius: 16px; background: rgba(7, 6, 26, 0.82); box-shadow: 0 0 0 1px var(--line), 0 0 40px rgba(155, 123, 255, 0.35);
+  animation: pop 0.35s cubic-bezier(0.3, 1.5, 0.5, 1); max-width: 92%;
+}
+.banner b { display: block; font: 900 clamp(18px, 3.4vh, 30px) var(--display); letter-spacing: 0.1em; color: var(--cyan); text-shadow: 0 0 18px rgba(78, 242, 255, 0.7); }
+.banner span { display: block; margin-top: 4px; font: 500 clamp(12px, 1.8vh, 15px) var(--text); color: var(--ink); }
+@keyframes pop { from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } }
+
+.dpad { position: relative; width: 168px; height: 168px; flex: none; margin-top: 6px; touch-action: none; }
+.dpad button { position: absolute; width: 58px; height: 58px; border-radius: 16px; border: 0; background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 0 0 1px var(--line); color: var(--muted); font-size: 20px; }
+.dpad button.on { background: rgba(255, 225, 77, 0.35); color: #fff; }
+.dpad .up { left: 55px; top: 0; } .dpad .down { left: 55px; bottom: 0; } .dpad .left { left: 0; top: 55px; } .dpad .right { right: 0; top: 55px; }
+.dpad.side { position: absolute; left: max(10px, env(safe-area-inset-left)); bottom: max(10px, env(safe-area-inset-bottom)); margin: 0; opacity: 0.85; }
+
+/* ---------- menu ---------- */
+.screen { position: absolute; inset: 0; z-index: 10; display: flex; flex-direction: column; overflow: hidden;
+  background: radial-gradient(70% 55% at 50% 0%, rgba(155, 123, 255, 0.28), transparent 70%), radial-gradient(60% 50% at 50% 100%, rgba(78, 242, 255, 0.14), transparent 70%), rgba(7, 6, 26, 0.78);
+  padding: max(10px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
+.topbar { display: flex; align-items: center; gap: 8px; flex: none; }
+.topbar .grow { flex: 1; }
+.profile { display: flex; align-items: center; gap: 10px; padding: 5px 14px 5px 5px; border: 0; border-radius: 16px; background: var(--panel2); box-shadow: inset 0 0 0 1px var(--line); text-align: left; min-width: 0; }
+.profile canvas { width: 36px; height: 36px; border-radius: 10px; background: rgba(0, 0, 0, 0.35); flex: none; }
+.pinfo { min-width: 0; }
+.pinfo b { display: block; font: 700 13px var(--display); letter-spacing: 0.06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+.pinfo small { display: block; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.xpbar { display: block; width: 110px; height: 4px; border-radius: 9px; background: rgba(255, 255, 255, 0.1); overflow: hidden; margin-top: 3px; }
+.xpbar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--cyan), var(--pink)); border-radius: 9px; transition: width 0.6s; }
+.coins { font: 900 14px var(--display); color: var(--yellow); padding: 8px 12px; border-radius: 99px; background: rgba(255, 225, 77, 0.1); box-shadow: inset 0 0 0 1px rgba(255, 225, 77, 0.25); white-space: nowrap; }
+
+.menu-main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(6px, 1.7vh, 16px); text-align: center; }
+.logo { margin: 0; line-height: 0.92; font-family: var(--display); font-weight: 900; letter-spacing: 0.04em; }
+.logo .l1 { display: block; font-size: clamp(34px, min(10.5vw, 10vh), 100px); color: var(--yellow); text-shadow: 0 0 22px rgba(255, 210, 26, 0.65), 0 4px 0 #b88c00; }
+.logo .l2 { display: inline-block; font-size: clamp(26px, min(8vw, 7.4vh), 74px); background: linear-gradient(90deg, var(--cyan), var(--violet) 50%, var(--pink)); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 14px rgba(155, 123, 255, 0.6)); letter-spacing: 0.32em; margin-right: -0.32em; }
+.logo sup { font-size: 0.45em; color: var(--pink); -webkit-text-fill-color: var(--pink); letter-spacing: 0; vertical-align: top; }
+.tagline { margin: 0; color: var(--muted); font-size: clamp(13px, 1.9vh, 16px); }
+.modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: min(880px, 100%); }
+.mode {
+  border: 0; border-radius: 16px; padding: clamp(9px, 1.6vh, 14px) 10px; text-align: left; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line);
+  transition: transform 0.12s, box-shadow 0.15s; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: center; min-width: 0;
+}
+.mode:hover { transform: translateY(-2px); }
+.mode .ic { grid-row: span 2; font-size: clamp(22px, 3.4vh, 30px); }
+.mode b { font: 900 clamp(13px, 2vh, 16px) var(--display); letter-spacing: 0.06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mode small { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mode.sel { box-shadow: inset 0 0 0 2px var(--yellow), 0 0 26px rgba(255, 225, 77, 0.25); }
+.mode .badge { grid-column: 1 / -1; justify-self: start; font: 700 10px var(--display); letter-spacing: 0.08em; padding: 2px 7px; border-radius: 99px; background: rgba(93, 255, 158, 0.15); color: var(--green); margin-top: 3px; }
+.mode-desc { margin: 0; color: var(--ink); font-size: clamp(12px, 1.8vh, 14px); max-width: 640px; opacity: 0.85; min-height: 1.2em; }
+.opts { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 16px; min-height: 36px; }
+.opt { display: flex; align-items: center; gap: 8px; font: 700 11px var(--display); letter-spacing: 0.08em; color: var(--muted); }
+.seg { display: inline-flex; padding: 3px; gap: 3px; border-radius: 12px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
+.seg button { border: 0; background: transparent; padding: 6px 11px; border-radius: 9px; font: 700 13px var(--text); color: var(--muted); }
+.seg button.sel { background: rgba(255, 225, 77, 0.16); color: var(--yellow); box-shadow: inset 0 0 0 1px rgba(255, 225, 77, 0.4); }
+.seg button:disabled { opacity: 0.35; cursor: default; }
+.hint { margin: 0; font-size: 12px; color: var(--muted); }
+.foot { flex: none; text-align: center; font-size: 10.5px; color: rgba(168, 165, 207, 0.7); margin-top: 4px; }
+
+/* ---------- overlays ---------- */
+.overlay { position: fixed; inset: 0; z-index: 30; display: flex; padding: 14px; background: rgba(4, 3, 15, 0.72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: fade 0.18s; }
+#pause { z-index: 25; }
+@keyframes fade { from { opacity: 0; } }
+.sheet { position: relative; margin: auto; width: min(620px, 100%); max-height: 100%; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;
+  background: linear-gradient(180deg, rgba(30, 26, 70, 0.98), rgba(14, 12, 36, 0.98)); border-radius: 22px; padding: 20px; box-shadow: 0 0 0 1px var(--line), 0 30px 80px rgba(0, 0, 0, 0.5); animation: rise 0.25s ease-out; }
+.sheet.small { width: min(340px, 100%); text-align: center; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+.sheet h2 { margin: 0 0 12px; font: 900 22px var(--display); letter-spacing: 0.08em; }
+.sheet h3 { margin: 16px 0 8px; font: 700 12px var(--display); letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase; }
+.sheet p, .sheet li { color: var(--muted); line-height: 1.5; font-size: 14px; }
+.sheet .close { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 10px; border: 0; background: var(--panel2); font-size: 15px; z-index: 2; }
+.col-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.row-btns { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 16px; }
+
+.big-score { font: 900 clamp(38px, 7vh, 56px) var(--display); color: var(--yellow); text-shadow: 0 0 24px rgba(255, 210, 26, 0.55); text-align: center; line-height: 1.1; }
+.res-title { text-align: center; font: 900 clamp(20px, 3.6vh, 28px) var(--display); letter-spacing: 0.12em; margin: 0; }
+.res-sub { text-align: center; color: var(--muted); margin: 4px 0 0; font-size: 14px; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 14px 0; }
+.kpi { background: var(--panel2); border-radius: 12px; padding: 9px 4px; text-align: center; }
+.kpi b { display: block; font: 900 18px var(--display); font-variant-numeric: tabular-nums; }
+.kpi span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.rewards { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.rewards span { padding: 6px 12px; border-radius: 99px; background: var(--panel2); font: 700 13px var(--text); }
+.rewards span.gold { background: rgba(255, 225, 77, 0.14); color: var(--yellow); }
+.rewards span.green { background: rgba(93, 255, 158, 0.12); color: var(--green); }
+.lvl { display: flex; align-items: center; gap: 10px; background: var(--panel2); border-radius: 12px; padding: 9px 12px; margin-top: 10px; font: 700 13px var(--display); }
+.lvl .xpbar { flex: 1; width: auto; height: 7px; margin: 0; }
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table td, .table th { padding: 7px 6px; text-align: left; border-bottom: 1px solid var(--line); }
+.table th { font: 700 10px var(--display); letter-spacing: 0.1em; color: var(--muted); }
+.table td.num { text-align: right; font: 700 14px var(--display); font-variant-numeric: tabular-nums; }
+.table tr.me td { color: var(--yellow); }
+.table tr.cpu td { color: var(--muted); }
+.swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; }
+
+.tabs { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--panel2); margin: 10px 0; }
+.tabs button { flex: 1; border: 0; padding: 8px 4px; border-radius: 9px; background: transparent; font: 700 13px var(--text); color: var(--muted); }
+.tabs button.sel { background: rgba(255, 225, 77, 0.16); color: var(--yellow); }
+.garage-top { display: flex; gap: 14px; align-items: center; }
+.garage-top canvas { width: 120px; height: 120px; border-radius: 18px; background: radial-gradient(circle, rgba(155, 123, 255, 0.25), rgba(0, 0, 0, 0.3)); flex: none; }
+.items { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.item { position: relative; border: 0; border-radius: 14px; padding: 10px 8px; background: var(--panel2); box-shadow: inset 0 0 0 1px var(--line); text-align: center; font: 700 13px var(--text); }
+.item canvas { width: 54px; height: 54px; display: block; margin: 0 auto 4px; }
+.item small { display: block; font-weight: 500; font-size: 11px; color: var(--muted); margin-top: 3px; }
+.item small.price { color: var(--yellow); font-weight: 700; }
+.item.eq { box-shadow: inset 0 0 0 2px var(--yellow); }
+.item.eq::after { content: '✓'; position: absolute; top: 6px; right: 9px; color: var(--yellow); }
+.item.locked { opacity: 0.6; }
+.item.shake { animation: shake 0.3s; }
+@keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+.mission { display: flex; align-items: center; gap: 12px; background: var(--panel2); border-radius: 14px; padding: 12px; margin-bottom: 8px; }
+.mission .mtxt { flex: 1; min-width: 0; }
+.mission b { display: block; font-size: 14px; }
+.mission .bar { height: 6px; border-radius: 9px; background: rgba(255, 255, 255, 0.08); margin-top: 6px; overflow: hidden; }
+.mission .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--green), var(--cyan)); }
+.mission .rw { font: 900 13px var(--display); color: var(--yellow); white-space: nowrap; }
+.mission.done { box-shadow: inset 0 0 0 1px rgba(93, 255, 158, 0.5); }
+.ach-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.ach { display: flex; gap: 10px; align-items: center; background: var(--panel2); border-radius: 12px; padding: 9px; opacity: 0.45; filter: grayscale(1); }
+.ach.got { opacity: 1; filter: none; box-shadow: inset 0 0 0 1px rgba(255, 225, 77, 0.3); }
+.ach .i { font-size: 22px; }
+.ach b { display: block; font-size: 13px; }
+.ach small { display: block; font-size: 11px; color: var(--muted); line-height: 1.3; }
+.set { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); font-weight: 700; font-size: 14px; }
+.set:last-child { border-bottom: 0; }
+.switch { width: 48px; height: 28px; border-radius: 99px; border: 0; background: rgba(255, 255, 255, 0.14); position: relative; flex: none; transition: background 0.2s; }
+.switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: transform 0.2s; }
+.switch.on { background: var(--green); }
+.switch.on::after { transform: translateX(20px); }
+.text-in { width: 100%; padding: 10px 12px; border-radius: 12px; border: 0; background: rgba(0, 0, 0, 0.3); box-shadow: inset 0 0 0 1px var(--line); font: 700 15px var(--display); letter-spacing: 0.06em; text-transform: uppercase; outline: 0; }
+.text-in:focus { box-shadow: inset 0 0 0 2px var(--cyan); }
+input[type=range] { accent-color: var(--yellow); width: 150px; }
+.pu-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.pu { display: flex; align-items: center; gap: 8px; background: var(--panel2); border-radius: 12px; padding: 8px; }
+.pu img { width: 30px; height: 30px; }
+.pu b { display: block; font-size: 13px; color: var(--ink); }
+.pu small { display: block; font-size: 11px; color: var(--muted); }
+.gh { display: flex; gap: 10px; align-items: center; margin: 6px 0; }
+.gh i { width: 14px; height: 14px; border-radius: 50%; flex: none; }
+
+#toasts { position: fixed; top: max(12px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 60; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; width: min(420px, 92%); }
+.toast { padding: 10px 16px; border-radius: 14px; background: rgba(18, 16, 44, 0.96); box-shadow: 0 0 0 1px var(--line), 0 10px 30px rgba(0, 0, 0, 0.4); font: 700 14px var(--text); animation: rise 0.25s; text-align: center; }
+.toast.gold { box-shadow: 0 0 0 1px rgba(255, 225, 77, 0.5), 0 0 24px rgba(255, 225, 77, 0.25); }
+
+/* ---------- small and short screens ---------- */
+@media (max-width: 700px) {
+  .modes { grid-template-columns: repeat(2, 1fr); }
+  .topbar { gap: 6px; }
+  .icon-btn { width: 36px; height: 36px; font-size: 15px; border-radius: 10px; }
+  .pinfo b { max-width: 90px; }
+  .xpbar { width: 70px; }
+  .coins { padding: 6px 9px; font-size: 12px; }
+  .kpis { grid-template-columns: repeat(2, 1fr); }
+  .ach-grid, .pu-list { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) {
+  .profile .pinfo small { display: none; }
+  #fs-btn { display: none; }
+}
+@media (max-height: 600px) {
+  .tagline, .hint { display: none; }
+  .mode small { display: none; }
+  .mode .ic { grid-row: auto; }
+  .foot { font-size: 9px; }
+}
+@media (max-height: 430px) {
+  .menu-main { gap: 5px; }
+  .modes { grid-template-columns: repeat(4, 1fr); }
+  .mode { padding: 6px 8px; }
+  .mode-desc { display: none; }
+  .foot { display: none; }
+  #hud-top { height: 34px; }
+  #hud-bot { height: 30px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+</style>
+</head>
+<body>
+  <div id="app">
+    <!-- ================= PLAY AREA ================= -->
+    <div id="stage">
+      <div id="hud-top" class="hud hidden">
+        <div class="hbox"><small>SCORE</small><b id="h-score">0</b></div>
+        <div class="hbox mid"><small id="h-mid-label">HIGH SCORE</small><b id="h-mid">0</b></div>
+        <div class="hbox right"><small id="h-right-label">LEVEL</small><b id="h-right">1</b></div>
+        <button id="pause-btn" class="icon-btn small" aria-label="Pause">❚❚</button>
+      </div>
+      <div id="board-wrap">
+        <canvas id="cv" aria-label="Game board"></canvas>
+        <div id="banner" class="banner hidden" aria-live="polite"><b id="banner-title"></b><span id="banner-sub"></span></div>
+      </div>
+      <div id="hud-bot" class="hud hidden">
+        <div id="h-lives" class="lives" aria-label="Lives"></div>
+        <div id="h-powers" class="powers"></div>
+        <div id="h-combo" class="combo hidden"><b id="h-combo-x">x2</b><i><em id="h-combo-bar"></em></i></div>
+        <div id="h-fruits" class="fruits"></div>
+      </div>
+      <div id="dpad" class="dpad hidden" aria-hidden="true">
+        <button data-d="0" class="up">▲</button><button data-d="1" class="left">◀</button>
+        <button data-d="3" class="right">▶</button><button data-d="2" class="down">▼</button>
+      </div>
+    </div>
+
+    <!-- ================= MENU ================= -->
+    <div id="menu" class="screen">
+      <header class="topbar">
+        <button id="profile" class="profile" aria-label="Your profile">
+          <canvas id="avatar" width="64" height="64"></canvas>
+          <span class="pinfo"><b id="p-name">PLAYER</b><small id="p-level">Lv 1 · Rookie</small><span class="xpbar"><i id="p-xp"></i></span></span>
+        </button>
+        <span id="coins" class="coins" title="Coins">🪙 0</span>
+        <span class="grow"></span>
+        <button class="icon-btn" data-open="missions" aria-label="Daily missions" title="Daily missions">🎯<i id="mission-dot" class="dot hidden"></i></button>
+        <button class="icon-btn" data-open="garage" aria-label="Garage and shop" title="Garage & shop">🛒</button>
+        <button class="icon-btn" data-open="scores" aria-label="High scores" title="High scores">🏆</button>
+        <button class="icon-btn" data-open="help" aria-label="How to play" title="How to play">❔</button>
+        <button class="icon-btn" data-open="settings" aria-label="Settings" title="Settings">⚙️</button>
+        <button class="icon-btn" id="fs-btn" aria-label="Full screen" title="Full screen">⛶</button>
+      </header>
+      <main class="menu-main">
+        <h1 class="logo" aria-label="PAC-MAN 2027"><span class="l1">PAC-MAN</span><span class="l2">2027<sup>*</sup></span></h1>
+        <p class="tagline">The arcade legend, rebuilt for the future.</p>
+        <div class="modes" id="modes"></div>
+        <p class="mode-desc" id="mode-desc"></p>
+        <div class="opts" id="opts"></div>
+        <button id="play" class="btn play">PLAY ▸</button>
+        <p class="hint" id="key-hint">Arrows / WASD to move · P to pause</p>
+      </main>
+      <footer class="foot">*Fan-made tribute. PAC-MAN is a trademark of Bandai Namco Entertainment Inc. This game is not affiliated with or endorsed by them.</footer>
+    </div>
+
+    <!-- ================= PAUSE ================= -->
+    <div id="pause" class="overlay hidden" role="dialog" aria-modal="true">
+      <div class="sheet small">
+        <h2>Paused</h2>
+        <div class="col-btns">
+          <button class="btn play" id="resume">RESUME</button>
+          <button class="btn" id="restart">Restart</button>
+          <button class="btn" data-open="settings">Settings</button>
+          <button class="btn ghost" id="quit">Quit to menu</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MODAL ================= -->
+    <div id="modal" class="overlay hidden" role="dialog" aria-modal="true">
+      <div class="sheet"><button class="close" aria-label="Close">✕</button><div id="modal-body"></div></div>
+    </div>
+    <div id="toasts" aria-live="polite"></div>
+  </div>
+  <noscript><p style="color:#fff;text-align:center;padding:40px;font-family:sans-serif">PAC-MAN 2027* needs JavaScript.</p></noscript>
+  <script>
+/* PAC-MAN 2027* — shared helpers */
+(function (PM) {
+  'use strict';
+
+  // directions: 0 up, 1 left, 2 down, 3 right (the arcade tie-break order)
+  PM.DX = [0, -1, 0, 1];
+  PM.DY = [-1, 0, 1, 0];
+  PM.OPP = [2, 3, 0, 1];
+  PM.W = 28;
+  PM.H = 31;
+  PM.TPS = 9.47; // tiles per second at "100%" arcade speed
+
+  PM.U = {
+    clamp: (v, a, b) => (v < a ? a : v > b ? b : v),
+    lerp: (a, b, t) => a + (b - a) * t,
+    dist2: (ax, ay, bx, by) => (ax - bx) * (ax - bx) + (ay - by) * (ay - by),
+    // horizontal distance across the wrap-around tunnel
+    wrapDx(ax, bx) { let d = ax - bx; if (d > PM.W / 2) d -= PM.W; else if (d < -PM.W / 2) d += PM.W; return d; },
+    fmt: n => Math.floor(n).toLocaleString('en-US'),
+    esc: s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+  };
+
+  // xorshift32: small, fast, seedable (daily challenge must be identical for everyone)
+  PM.rng = function (seed) {
+    let s = (seed >>> 0) || 0x9e3779b9;
+    const r = () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; };
+    r.int = n => Math.floor(r() * n);
+    r.pick = arr => arr[Math.floor(r() * arr.length)];
+    r.range = (a, b) => a + r() * (b - a);
+    return r;
+  };
+  PM.hash = function (str) {
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  };
+  PM.dateKey = function (d) {
+    d = d || new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+  PM.shuffle = function (arr, r) {
+    r = r || Math.random;
+    for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); const t = arr[i]; arr[i] = arr[j]; arr[j] = t; }
+    return arr;
+  };
+})(window.PM = window.PM || {});
+
+/* PAC-MAN 2027* — rules, level tables, catalog */
+(function (PM) {
+  'use strict';
+
+  /* ---------- arcade level table (speeds are fractions of PM.TPS) ---------- */
+  const FRIGHT = [6, 5, 4, 3, 2, 5, 2, 2, 1, 5, 2, 1, 1, 3, 1, 1, 0, 1];
+  const ELROY = [[20, 10], [30, 15], [40, 20], [40, 20], [40, 20], [50, 25], [50, 25], [50, 25], [60, 30], [60, 30], [60, 30],
+    [80, 40], [80, 40], [80, 40], [100, 50], [100, 50], [100, 50], [100, 50], [120, 60]];
+  PM.levelSpec = function (level) {
+    const L = Math.max(1, level);
+    const s = L === 1 ? { pac: 0.8, pacFright: 0.9, ghost: 0.75, tunnel: 0.4, ghostFright: 0.5, elroy1: 0.8, elroy2: 0.85 }
+      : L <= 4 ? { pac: 0.9, pacFright: 0.95, ghost: 0.85, tunnel: 0.45, ghostFright: 0.55, elroy1: 0.9, elroy2: 0.95 }
+        : L <= 20 ? { pac: 1, pacFright: 1, ghost: 0.95, tunnel: 0.5, ghostFright: 0.6, elroy1: 1, elroy2: 1.05 }
+          : { pac: 0.9, pacFright: 0.9, ghost: 0.95, tunnel: 0.5, ghostFright: 0.6, elroy1: 1, elroy2: 1.05 };
+    s.fright = L <= FRIGHT.length ? FRIGHT[L - 1] : 0;
+    s.flashes = L === 9 || L === 12 || L === 13 || L === 15 || L === 16 || L === 18 ? 3 : 5;
+    const e = ELROY[Math.min(L, ELROY.length) - 1];
+    s.elroyDots1 = e[0]; s.elroyDots2 = e[1];
+    // scatter / chase phases in seconds (Infinity = rest of the level)
+    s.phases = L === 1 ? [7, 20, 7, 20, 5, 20, 5, Infinity]
+      : L <= 4 ? [7, 20, 7, 20, 5, 1033, 1 / 60, Infinity]
+        : [5, 20, 5, 20, 5, 1037, 1 / 60, Infinity];
+    // ghost house: personal dot limits (pinky, inky, clyde) and the "pac stopped eating" timer
+    s.dotLimits = L === 1 ? [0, 30, 60] : L === 2 ? [0, 0, 50] : [0, 0, 0];
+    s.idleRelease = L <= 4 ? 4 : 3;
+    return s;
+  };
+
+  PM.FRUITS = [
+    { id: 'cherry', name: 'Cherry', points: 100 }, { id: 'strawberry', name: 'Strawberry', points: 300 },
+    { id: 'orange', name: 'Orange', points: 500 }, { id: 'apple', name: 'Apple', points: 700 },
+    { id: 'melon', name: 'Melon', points: 1000 }, { id: 'ship', name: 'Starship', points: 2000 },
+    { id: 'bell', name: 'Bell', points: 3000 }, { id: 'key', name: 'Key', points: 5000 }
+  ];
+  const FRUIT_BY_LEVEL = [0, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6];
+  PM.fruitFor = level => PM.FRUITS[level <= FRUIT_BY_LEVEL.length ? FRUIT_BY_LEVEL[level - 1] : 7];
+
+  PM.GHOSTS = [
+    { name: 'Blinky', nick: 'Shadow', color: '#ff3b5c', corner: [25, -4], home: [14, 11.5] },
+    { name: 'Pinky', nick: 'Speedy', color: '#ff8ce6', corner: [2, -4], home: [14, 14.5] },
+    { name: 'Inky', nick: 'Bashful', color: '#3be8ff', corner: [27, 31], home: [12, 14.5] },
+    { name: 'Clyde', nick: 'Pokey', color: '#ffb347', corner: [0, 31], home: [16, 14.5] }
+  ];
+
+  /* ---------- modes ---------- */
+  PM.MODES = {
+    classic: { id: 'classic', name: 'Classic', icon: '🕹️', tag: 'Arcade-perfect', desc: 'The original maze, ghost brains and level tables. 3 lives, bonus life at 10,000.' },
+    x27: { id: 'x27', name: '2027', icon: '🌀', tag: 'Evolving mazes', desc: 'A new generated maze and world every level, power-ups, combos and surprise events.' },
+    battle: { id: 'battle', name: 'Battle', icon: '⚔️', tag: 'Vs AI rivals', desc: 'You vs up to 3 humanlike AI Pac-Men. Power up to eat rivals. Top score in 2:30 wins.' },
+    daily: { id: 'daily', name: 'Daily Run', icon: '📅', tag: 'Same for everyone', desc: 'Today\'s seeded mazes and events. One run counts. Share your score.' }
+  };
+  PM.MODE_ORDER = ['classic', 'x27', 'battle', 'daily'];
+  PM.DIFFICULTY = {
+    casual: { name: 'Casual', ghost: 0.88, fright: 1.6, smart: false },
+    normal: { name: 'Normal', ghost: 1, fright: 1, smart: false },
+    insane: { name: 'Insane', ghost: 1.08, fright: 0.55, smart: true }
+  };
+  PM.BATTLE_TIME = 150;
+
+  /* ---------- 2027 power-ups ---------- */
+  PM.POWERUPS = {
+    turbo: { name: 'Turbo', color: '#ffd23a', time: 6, desc: '+35% speed' },
+    magnet: { name: 'Magnet', color: '#ff5a7a', time: 8, desc: 'Pulls in nearby dots' },
+    freeze: { name: 'Freeze', color: '#8fe8ff', time: 4, desc: 'Ghosts freeze. Touch them to shatter.' },
+    shield: { name: 'Shield', color: '#5dff9e', time: 15, desc: 'Survive one ghost hit' },
+    shock: { name: 'Shockwave', color: '#b58cff', time: 0, desc: 'Ghosts nearby turn blue' },
+    phase: { name: 'Phase', color: '#e6e6ff', time: 5, desc: 'Pass through ghosts' },
+    double: { name: '2x Points', color: '#ffa23a', time: 10, desc: 'Double points' }
+  };
+  PM.POWERUP_ORDER = Object.keys(PM.POWERUPS);
+
+  /* ---------- level events (2027 + Daily, from level 2) ---------- */
+  PM.EVENTS = {
+    none: { name: '', desc: '' },
+    blackout: { name: 'BLACKOUT', desc: 'The lights are out. Stay close to the dots.' },
+    rush: { name: 'GHOST RUSH', desc: 'Ghosts are faster. Ghost points x2.' },
+    gold: { name: 'GOLD RUSH', desc: 'Grab the gold coins for shop money.' },
+    speedrun: { name: 'SPEED RUN', desc: 'Clear the maze fast for a big time bonus.' },
+    surge: { name: 'POWER SURGE', desc: 'Eight energizers in this maze.' }
+  };
+  PM.EVENT_POOL = ['none', 'none', 'blackout', 'rush', 'gold', 'speedrun', 'surge'];
+
+  /* ---------- maze themes ---------- */
+  PM.THEMES = {
+    retro: { name: 'Retro', bg: ['#000000', '#000000'], wall: '#2b46ff', glow: '#2b46ff', fill: 'rgba(20,30,140,0.18)', dot: '#ffc8b8', door: '#ffb8ff', accent: '#ffe14d' },
+    neon: { name: 'Neon City', bg: ['#0b0420', '#05010d'], wall: '#ff3fd8', glow: '#ff3fd8', fill: 'rgba(255,63,216,0.10)', dot: '#fff4a8', door: '#4ef2ff', accent: '#4ef2ff' },
+    cyber: { name: 'Cyber Jungle', bg: ['#021a12', '#010a07'], wall: '#27ff9a', glow: '#27ff9a', fill: 'rgba(39,255,154,0.08)', dot: '#eaffc8', door: '#ffe14d', accent: '#ffe14d' },
+    ice: { name: 'Ice Cavern', bg: ['#04162b', '#020a16'], wall: '#7fe7ff', glow: '#7fe7ff', fill: 'rgba(127,231,255,0.12)', dot: '#ffffff', door: '#c4b5ff', accent: '#c4b5ff' },
+    lava: { name: 'Lava Core', bg: ['#1f0600', '#0c0200'], wall: '#ff6a1f', glow: '#ff3d00', fill: 'rgba(255,106,31,0.12)', dot: '#ffe0a0', door: '#ffd23a', accent: '#ffd23a' },
+    space: { name: 'Deep Space', bg: ['#0a0420', '#020108'], wall: '#9b7bff', glow: '#7b5cff', fill: 'rgba(155,123,255,0.10)', dot: '#e8e0ff', door: '#ff8ce6', accent: '#ff8ce6', stars: true },
+    gold: { name: 'Golden Arcade', bg: ['#140f00', '#060400'], wall: '#ffd34d', glow: '#ffb000', fill: 'rgba(255,211,77,0.10)', dot: '#fff7d6', door: '#ff8ce6', accent: '#ffffff' }
+  };
+  PM.WORLD_THEMES = ['neon', 'cyber', 'ice', 'lava', 'space'];
+
+  /* ---------- garage / shop ---------- */
+  PM.CATALOG = {
+    color: [
+      { id: 'yellow', name: 'Classic Yellow', value: '#ffe14d', unlock: null },
+      { id: 'cyan', name: 'Neon Cyan', value: '#4ef2ff', unlock: { coins: 150 } },
+      { id: 'pink', name: 'Hot Pink', value: '#ff5ec8', unlock: { coins: 150 } },
+      { id: 'lime', name: 'Lime Rush', value: '#9dff4e', unlock: { coins: 200 } },
+      { id: 'orange', name: 'Sunset', value: '#ff9a3a', unlock: { coins: 200 } },
+      { id: 'white', name: 'Ghost White', value: '#f4f4ff', unlock: { coins: 250 } },
+      { id: 'shadow', name: 'Shadow', value: '#1b1b2e', unlock: { coins: 400 } },
+      { id: 'gold', name: 'Solid Gold', value: 'gold', unlock: { ach: 'score100k' } },
+      { id: 'rainbow', name: 'Rainbow', value: 'rainbow', unlock: { coins: 900 } }
+    ],
+    hat: [
+      { id: 'none', name: 'No Hat', unlock: null },
+      { id: 'cap', name: 'Cap', unlock: { coins: 100 } },
+      { id: 'bow', name: 'Bow', unlock: { coins: 120 } },
+      { id: 'party', name: 'Party Hat', unlock: { coins: 150 } },
+      { id: 'headphones', name: 'Headphones', unlock: { coins: 220 } },
+      { id: 'antenna', name: 'Antenna', unlock: { coins: 260 } },
+      { id: 'horns', name: 'Viking', unlock: { ach: 'ghosts100' } },
+      { id: 'halo', name: 'Halo', unlock: { ach: 'perfect' } },
+      { id: 'crown', name: 'Crown', unlock: { ach: 'battle_win' } }
+    ],
+    trail: [
+      { id: 'none', name: 'No Trail', unlock: null },
+      { id: 'sparkle', name: 'Sparkle', unlock: { coins: 200 } },
+      { id: 'hearts', name: 'Hearts', unlock: { coins: 200 } },
+      { id: 'fire', name: 'Fire', unlock: { coins: 260 } },
+      { id: 'pixels', name: 'Pixels', unlock: { coins: 300 } },
+      { id: 'rainbow', name: 'Rainbow', unlock: { coins: 450 } }
+    ],
+    theme: [
+      { id: 'retro', name: 'Retro', unlock: null },
+      { id: 'neon', name: 'Neon City', unlock: null },
+      { id: 'cyber', name: 'Cyber Jungle', unlock: { coins: 150 } },
+      { id: 'ice', name: 'Ice Cavern', unlock: { coins: 150 } },
+      { id: 'lava', name: 'Lava Core', unlock: { coins: 200 } },
+      { id: 'space', name: 'Deep Space', unlock: { coins: 300 } },
+      { id: 'gold', name: 'Golden Arcade', unlock: { ach: 'level10' } }
+    ]
+  };
+  PM.GARAGE_TABS = [['color', 'Color'], ['hat', 'Hat'], ['trail', 'Trail'], ['theme', 'Classic maze']];
+
+  /* ---------- AI rivals (Battle) ---------- */
+  PM.BOT_SKILL = {
+    easy: { name: 'Easy', depth: 7, mistake: 0.16, danger: 0.75, react: 0.45, speed: 0.92, margin: 0.5, horizon: 1.1 },
+    normal: { name: 'Normal', depth: 11, mistake: 0.06, danger: 1, react: 0.25, speed: 0.97, margin: 1, horizon: 1.8 },
+    hard: { name: 'Hard', depth: 15, mistake: 0.015, danger: 1.15, react: 0.1, speed: 1, margin: 1.5, horizon: 2.5 }
+  };
+  PM.PERSONALITIES = {
+    greedy: { name: 'Greedy', dot: 1.3, hunt: 0.8, pow: 0.8, danger: 0.9, gamma: 0.8 },
+    hunter: { name: 'Hunter', dot: 0.9, hunt: 1.7, pow: 1, danger: 0.9, gamma: 0.83 },
+    cautious: { name: 'Cautious', dot: 1, hunt: 0.7, pow: 1, danger: 1.5, gamma: 0.84 },
+    trickster: { name: 'Trickster', dot: 0.9, hunt: 1.1, pow: 2.2, danger: 1, gamma: 0.82 }
+  };
+  PM.BOTS = [
+    { name: 'ZIPPY', color: '#4ef2ff', hat: 'cap' },
+    { name: 'MOCHI', color: '#ff5ec8', hat: 'bow' },
+    { name: 'BOLT', color: '#9dff4e', hat: 'antenna' },
+    { name: 'NOVA', color: '#ff9a3a', hat: 'headphones' },
+    { name: 'PIXEL', color: '#f4f4ff', hat: 'party' },
+    { name: 'KIWI', color: '#b58cff', hat: 'horns' }
+  ];
+  PM.BOT_LINES = {
+    powered: ['😈', '💪', '😎'], scared: ['😱', '😬', '🏃'], ate: ['😋', '🔥', '✌️'], died: ['😵', '😭', '😤'], win: ['🏆']
+  };
+
+  /* ---------- progression ---------- */
+  PM.ACHIEVEMENTS = [
+    { id: 'first', icon: '🪙', name: 'Insert Coin', desc: 'Finish your first game.' },
+    { id: 'level5', icon: '🗺️', name: 'Maze Runner', desc: 'Reach level 5.' },
+    { id: 'level10', icon: '🏃', name: 'Marathon', desc: 'Reach level 10.' },
+    { id: 'ghost4', icon: '👻', name: 'Ghost Buster', desc: 'Eat all 4 ghosts with one energizer.' },
+    { id: 'ghosts100', icon: '🪦', name: 'Spirit Collector', desc: 'Eat 100 ghosts in total.' },
+    { id: 'fruit10', icon: '🍒', name: 'Fruit Salad', desc: 'Eat 10 bonus fruits in total.' },
+    { id: 'score50k', icon: '🏅', name: '50K Club', desc: 'Score 50,000 in one game.' },
+    { id: 'score100k', icon: '💯', name: 'Six Digits', desc: 'Score 100,000 in one game.' },
+    { id: 'perfect', icon: '😇', name: 'Untouchable', desc: 'Clear a level without losing a life.' },
+    { id: 'battle_win', icon: '⚔️', name: 'Arena Champ', desc: 'Win a Battle.' },
+    { id: 'battle_hard', icon: '🦾', name: 'Bot Crusher', desc: 'Win a Battle against 3 Hard rivals.' },
+    { id: 'combo50', icon: '🔥', name: 'Combo Master', desc: 'Reach a 50-dot combo.' },
+    { id: 'power20', icon: '⚡', name: 'Power User', desc: 'Use 20 power-ups in total.' },
+    { id: 'shock3', icon: '💥', name: 'Shockwave!', desc: 'Turn 3 ghosts blue with one Shockwave.' },
+    { id: 'insane', icon: '🧠', name: 'Insane Mode', desc: 'Clear a level on Insane.' },
+    { id: 'daily3', icon: '📅', name: 'Daily Grinder', desc: 'Play the Daily Run 3 days in a row.' }
+  ];
+  PM.MISSIONS = [
+    { id: 'ghosts', text: 'Eat {n} ghosts', n: [8, 12, 16], reward: 80 },
+    { id: 'fruits', text: 'Eat {n} bonus fruits', n: [2, 3, 4], reward: 70 },
+    { id: 'levels', text: 'Clear {n} levels', n: [2, 3, 4], reward: 90 },
+    { id: 'score', text: 'Score {n} in one game', n: [20000, 30000, 45000], reward: 100 },
+    { id: 'powerups', text: 'Use {n} power-ups', n: [5, 8, 12], reward: 70 },
+    { id: 'battle', text: 'Win {n} Battle', n: [1], reward: 120 },
+    { id: 'dots', text: 'Eat {n} dots', n: [600, 900, 1300], reward: 60 },
+    { id: 'combo', text: 'Reach a {n}-dot combo', n: [25, 35], reward: 80 }
+  ];
+  // CPU legends on the local high score tables (clearly marked as CPU)
+  PM.CPU_SCORES = {
+    classic: [['ACE', 88000], ['NEO', 64000], ['VEX', 41000], ['KAI', 26000], ['LUX', 15000], ['ZED', 8000]],
+    x27: [['ORB', 120000], ['SYN', 82000], ['HEX', 56000], ['ION', 33000], ['RAY', 18000], ['JET', 9000]],
+    battle: [['ZIP', 42000], ['MOX', 30000], ['BIT', 21000], ['FOX', 14000], ['TAO', 9000], ['EMU', 5000]],
+    daily: [['SUN', 60000], ['DAY', 40000], ['AMP', 26000], ['ELK', 15000], ['OWL', 9000], ['BEE', 4000]]
+  };
+})(window.PM = window.PM || {});
+
+/* PAC-MAN 2027* — mazes: the arcade layout, a procedural generator and fast BFS */
+(function (PM) {
+  'use strict';
+  const W = PM.W, H = PM.H, DX = PM.DX, DY = PM.DY;
+  const PATH = 0, WALL = 1, DOOR = 2, HOUSE = 3;
+  PM.TILE = { PATH, WALL, DOOR, HOUSE };
+
+  // 28 x 31, '.' dot, 'o' energizer, ' ' empty path, '-' ghost door
+  const CLASSIC = [
+    '############################',
+    '#............##............#',
+    '#.####.#####.##.#####.####.#',
+    '#o####.#####.##.#####.####o#',
+    '#.####.#####.##.#####.####.#',
+    '#..........................#',
+    '#.####.##.########.##.####.#',
+    '#.####.##.########.##.####.#',
+    '#......##....##....##......#',
+    '######.##### ## #####.######',
+    '######.##### ## #####.######',
+    '######.##          ##.######',
+    '######.## ###--### ##.######',
+    '######.## #      # ##.######',
+    '      .   #      #   .      ',
+    '######.## #      # ##.######',
+    '######.## ######## ##.######',
+    '######.##          ##.######',
+    '######.## ######## ##.######',
+    '######.## ######## ##.######',
+    '#............##............#',
+    '#.####.#####.##.#####.####.#',
+    '#.####.#####.##.#####.####.#',
+    '#o..##.......  .......##..o#',
+    '###.##.##.########.##.##.###',
+    '###.##.##.########.##.##.###',
+    '#......##....##....##......#',
+    '#.##########.##.##########.#',
+    '#.##########.##.##########.#',
+    '#..........................#',
+    '############################'
+  ];
+
+  const QUEUE = new Int16Array(W * H);
+  const wrapX = x => ((x % W) + W) % W;
+
+  class Maze {
+    constructor(rows, kind, seed) {
+      this.rows = rows;
+      this.kind = kind;
+      this.seed = seed || 0;
+      this.type = new Uint8Array(W * H);
+      this.dots0 = new Uint8Array(W * H);
+      this.tunnel = new Uint8Array(W * H);
+      this.redZone = new Uint8Array(W * H);
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          const c = rows[y][x], i = y * W + x;
+          this.type[i] = c === '#' ? WALL : c === '-' ? DOOR : PATH;
+          if (c === '.') this.dots0[i] = 1;
+          else if (c === 'o') this.dots0[i] = 2;
+        }
+      }
+      for (let y = 13; y <= 15; y++) for (let x = 11; x <= 16; x++) this.type[y * W + x] = HOUSE;
+      for (let x = 0; x < W; x++) if ((x <= 5 || x >= 22) && this.type[14 * W + x] === PATH) this.tunnel[14 * W + x] = 1;
+      if (kind === 'classic') for (const [x, y] of [[12, 11], [15, 11], [12, 23], [15, 23]]) this.redZone[y * W + x] = 1;
+      // walkable graph (ghost door and house are handled by the ghost-house logic, not the graph)
+      this.adj = new Int16Array(W * H * 4).fill(-1);
+      this.paths = [];
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          const i = y * W + x;
+          if (this.type[i] !== PATH) continue;
+          this.paths.push(i);
+          for (let d = 0; d < 4; d++) {
+            const ny = y + DY[d], nx = wrapX(x + DX[d]);
+            if (ny < 0 || ny >= H) continue;
+            const j = ny * W + nx;
+            if (this.type[j] === PATH) this.adj[i * 4 + d] = j;
+          }
+        }
+      }
+      this.dotTotal = 0;
+      for (let i = 0; i < W * H; i++) if (this.dots0[i]) this.dotTotal++;
+    }
+    idx(x, y) { return y * W + wrapX(x); }
+    tileAt(px, py) { return PM.U.clamp(Math.floor(py), 0, H - 1) * W + wrapX(Math.floor(px)); }
+    isPath(x, y) { return y >= 0 && y < H && this.type[y * W + wrapX(x)] === PATH; }
+    degree(i) { let n = 0; for (let d = 0; d < 4; d++) if (this.adj[i * 4 + d] >= 0) n++; return n; }
+    nearestPath(x, y, filter) {
+      let best = -1, bd = 1e9;
+      for (const i of this.paths) {
+        if (filter && !filter(i)) continue;
+        const d = PM.U.dist2(i % W, (i / W) | 0, x, y);
+        if (d < bd) { bd = d; best = i; }
+      }
+      return best;
+    }
+    /* breadth-first distances in tiles; `blocked` is a tile the search may not enter */
+    bfs(start, out, blocked, maxDepth) {
+      out.fill(-1);
+      if (start < 0) return out;
+      maxDepth = maxDepth === undefined ? 9999 : maxDepth;
+      let h = 0, t = 0;
+      QUEUE[t++] = start; out[start] = 0;
+      const adj = this.adj;
+      while (h < t) {
+        const u = QUEUE[h++], du = out[u];
+        if (du >= maxDepth) continue;
+        for (let d = 0; d < 4; d++) {
+          const v = adj[u * 4 + d];
+          if (v < 0 || v === blocked || out[v] >= 0) continue;
+          out[v] = du + 1; QUEUE[t++] = v;
+        }
+      }
+      return out;
+    }
+    /* distance from the nearest of many sources (e.g. "how far is the closest dot") */
+    multiBfs(sources, out) {
+      out.fill(-1);
+      let h = 0, t = 0;
+      for (const s of sources) if (out[s] < 0) { out[s] = 0; QUEUE[t++] = s; }
+      const adj = this.adj;
+      while (h < t) {
+        const u = QUEUE[h++], du = out[u];
+        for (let d = 0; d < 4; d++) {
+          const v = adj[u * 4 + d];
+          if (v < 0 || out[v] >= 0) continue;
+          out[v] = du + 1; QUEUE[t++] = v;
+        }
+      }
+      return out;
+    }
+  }
+  PM.Maze = Maze;
+  PM.Maze.classic = () => new Maze(CLASSIC, 'classic', 0);
+
+  /* ================= procedural mazes =================
+     Corridors live on the arcade's own grid lines (columns 1,6,9,12 mirrored,
+     rows 1,5,8,...,29), so every maze keeps the classic proportions, ghost house,
+     tunnel and start positions. The edge set is mirrored, dead ends are removed and
+     the graph is made fully connected, so ghosts (which never reverse) can't get stuck. */
+  const COLS = [1, 6, 9, 12, 15, 18, 21, 26];
+  const ROWS = [1, 5, 8, 11, 14, 17, 20, 23, 26, 29];
+  const NC = COLS.length, NR = ROWS.length;
+  const hId = (r, c) => 'h' + r + ',' + c; // (c,r)-(c+1,r)
+  const vId = (r, c) => 'v' + r + ',' + c; // (c,r)-(c,r+1)
+  const hMirror = c => NC - 2 - c;
+  const vMirror = c => NC - 1 - c;
+  const FORBID = new Set([hId(4, 2), hId(4, 3), hId(4, 4), vId(3, 3), vId(4, 3), vId(3, 4), vId(4, 4)]);
+  const FORCED = [hId(3, 2), hId(3, 3), hId(3, 4), hId(5, 2), hId(5, 3), hId(5, 4), hId(4, 0), hId(4, 1), hId(4, 5), hId(4, 6),
+    hId(7, 3), vId(3, 2), vId(4, 2), vId(3, 5), vId(4, 5)];
+
+  function edgesOfNode(c, r) {
+    const out = [];
+    if (c > 0) out.push(hId(r, c - 1));
+    if (c < NC - 1) out.push(hId(r, c));
+    if (r > 0) out.push(vId(r - 1, c));
+    if (r < NR - 1) out.push(vId(r, c));
+    return out.filter(e => !FORBID.has(e));
+  }
+  function mirrorOf(e) {
+    const [r, c] = e.slice(1).split(',').map(Number);
+    return e[0] === 'h' ? hId(r, hMirror(c)) : vId(r, vMirror(c));
+  }
+  function ends(e) {
+    const [r, c] = e.slice(1).split(',').map(Number);
+    return e[0] === 'h' ? [[c, r], [c + 1, r]] : [[c, r], [c, r + 1]];
+  }
+
+  function buildEdges(rng) {
+    const E = new Set(FORCED);
+    const add = e => { E.add(e); E.add(mirrorOf(e)); };
+    const del = e => { if (FORCED.includes(e)) return; E.delete(e); E.delete(mirrorOf(e)); };
+    const p = 0.46 + rng() * 0.2;
+    for (let r = 0; r < NR; r++) {
+      for (let c = 0; c <= 3; c++) {
+        const h = hId(r, c), v = vId(r, c);
+        if (c <= 3 && !FORBID.has(h) && rng() < p) add(h);
+        if (r < NR - 1 && !FORBID.has(v) && rng() < p) add(v);
+      }
+    }
+    const degree = (c, r) => {
+      let d = edgesOfNode(c, r).filter(e => E.has(e)).length;
+      if (r === 4 && (c === 0 || c === NC - 1)) d++; // tunnel wrap
+      return d;
+    };
+    for (let round = 0; round < 12; round++) {
+      // 1) no dead ends
+      for (let it = 0; it < 300; it++) {
+        let changed = false;
+        for (let r = 0; r < NR; r++) {
+          for (let c = 0; c < NC; c++) {
+            if (degree(c, r) !== 1) continue;
+            const cands = edgesOfNode(c, r).filter(e => !E.has(e));
+            const own = edgesOfNode(c, r).find(e => E.has(e));
+            if (cands.length && (rng() < 0.7 || FORCED.includes(own))) add(cands[Math.floor(rng() * cands.length)]);
+            else if (own) del(own);
+            changed = true;
+          }
+        }
+        if (!changed) break;
+      }
+      // 2) everything connected to the start node (col 12/15 on row 23)
+      const seen = new Set(['3,7']), stack = [[3, 7]];
+      while (stack.length) {
+        const [c, r] = stack.pop();
+        for (const e of edgesOfNode(c, r)) {
+          if (!E.has(e)) continue;
+          for (const [a, b] of ends(e)) { const k = a + ',' + b; if (!seen.has(k)) { seen.add(k); stack.push([a, b]); } }
+        }
+        if (r === 4 && (c === 0 || c === NC - 1)) { const k = (NC - 1 - c) + ',4'; if (!seen.has(k)) { seen.add(k); stack.push([NC - 1 - c, 4]); } }
+      }
+      const lonely = [];
+      for (let r = 0; r < NR; r++) for (let c = 0; c < NC; c++) if (degree(c, r) > 0 && !seen.has(c + ',' + r)) lonely.push([c, r]);
+      if (!lonely.length) return E;
+      let linked = false;
+      for (const [c, r] of PM.shuffle(lonely, rng)) {
+        const bridge = edgesOfNode(c, r).find(e => !E.has(e) && ends(e).some(([a, b]) => seen.has(a + ',' + b)));
+        if (bridge) { add(bridge); linked = true; break; }
+      }
+      if (!linked) for (const [c, r] of lonely) for (const e of edgesOfNode(c, r)) del(e);
+    }
+    return null;
+  }
+
+  PM.Maze.generate = function (seed) {
+    const rng = PM.rng(seed);
+    for (let attempt = 0; attempt < 40; attempt++) {
+      const E = buildEdges(rng);
+      if (!E) continue;
+      const g = Array.from({ length: H }, () => Array(W).fill('#'));
+      for (const e of E) {
+        const [[c1, r1], [c2, r2]] = ends(e);
+        for (let y = ROWS[r1]; y <= ROWS[r2]; y++) for (let x = COLS[c1]; x <= COLS[c2]; x++) g[y][x] = ' ';
+      }
+      g[14][0] = ' '; g[14][W - 1] = ' ';
+      const house = ['###--###', '#      #', '#      #', '#      #', '########'];
+      for (let k = 0; k < 5; k++) for (let x = 0; x < 8; x++) g[12 + k][10 + x] = house[k][x];
+      // dots everywhere except the ghost-house area, the tunnel and the start spot
+      let dots = 0;
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          if (g[y][x] !== ' ') continue;
+          const nearHouse = y >= 9 && y <= 19 && x >= 7 && x <= 20;
+          const tunnel = y === 14 && (x <= 5 || x >= 22);
+          const start = y === 23 && (x === 13 || x === 14);
+          if (!nearHouse && !tunnel && !start) { g[y][x] = '.'; dots++; }
+        }
+      }
+      if (dots < 170 || dots > 290) continue;
+      // energizers near the four corners (mirrored)
+      const near = (tx, ty) => {
+        let best = null, bd = 1e9;
+        for (let y = 0; y < H; y++) for (let x = 0; x <= 13; x++) {
+          if (g[y][x] !== '.') continue;
+          const d = (x - tx) * (x - tx) + (y - ty) * (y - ty);
+          if (d < bd) { bd = d; best = [x, y]; }
+        }
+        return best;
+      };
+      const e1 = near(1, 3); if (e1) { g[e1[1]][e1[0]] = 'o'; g[e1[1]][W - 1 - e1[0]] = 'o'; }
+      const e2 = near(1, 23); if (e2) { g[e2[1]][e2[0]] = 'o'; g[e2[1]][W - 1 - e2[0]] = 'o'; }
+      return new Maze(g.map(r => r.join('')), 'generated', seed);
+    }
+    return PM.Maze.classic();
+  };
+})(window.PM = window.PM || {});
+
+/* PAC-MAN 2027* — ghost brains and the humanlike Pac-Man bot */
+(function (PM) {
+  'use strict';
+  const W = PM.W, H = PM.H, DX = PM.DX, DY = PM.DY, OPP = PM.OPP;
+  const DOOR_TILE = 11 * W + 13;
+  const N = W * H;
+
+  /* ---------- ghosts: the four arcade personalities ---------- */
+  PM.ghostTarget = function (game, g) {
+    if (g.state === 'eaten') return [13, 11];
+    const elroyChase = g.id === 0 && g.elroy > 0;
+    if (game.isScatter() && !elroyChase) return g.corner;
+    const p = game.targetPacFor(g);
+    const px = Math.floor(p.x), py = Math.floor(p.y), d = p.dir;
+    const bug = game.maze.kind === 'classic'; // the arcade's famous "up" overflow
+    switch (g.id) {
+      case 0: return [px, py]; // Blinky: straight at you
+      case 1: { // Pinky: four tiles ahead
+        let tx = px + 4 * DX[d]; const ty = py + 4 * DY[d];
+        if (bug && d === 0) tx -= 4;
+        return [tx, ty];
+      }
+      case 2: { // Inky: mirror of Blinky through two tiles ahead of you
+        let vx = px + 2 * DX[d]; const vy = py + 2 * DY[d];
+        if (bug && d === 0) vx -= 2;
+        const b = game.ghosts[0];
+        return [2 * vx - Math.floor(b.x), 2 * vy - Math.floor(b.y)];
+      }
+      default: { // Clyde: chases until he gets close, then runs home
+        const dd = PM.U.dist2(Math.floor(g.x), Math.floor(g.y), px, py);
+        return dd > 64 ? [px, py] : g.corner;
+      }
+    }
+  };
+
+  const FIELD = new Int16Array(W * H);
+  PM.ghostChoose = function (game, g, tile) {
+    const m = game.maze;
+    const opts = [];
+    for (let d = 0; d < 4; d++) {
+      if (d === OPP[g.dir]) continue;
+      const n = m.adj[tile * 4 + d];
+      if (n < 0) continue;
+      if (d === 0 && m.redZone[tile] && g.fright <= 0 && g.state === 'active') continue;
+      opts.push(d, n);
+    }
+    if (!opts.length) return OPP[g.dir];
+    if (g.fright > 0 && g.state === 'active') return opts[2 * game.rng.int(opts.length / 2)];
+    if (g.state === 'eaten') { // eyes always know the way home
+      const f = game.homeField;
+      let best = opts[0], bd = 1e9;
+      for (let i = 0; i < opts.length; i += 2) { const v = f[opts[i + 1]]; if (v >= 0 && v < bd) { bd = v; best = opts[i]; } }
+      return best;
+    }
+    const t = PM.ghostTarget(game, g);
+    g.target = t;
+    if (game.smart) { // Insane: real shortest paths instead of straight-line guesses
+      const tx = PM.U.clamp(t[0], 0, W - 1), ty = PM.U.clamp(t[1], 0, H - 1);
+      let goal = m.type[ty * W + tx] === PM.TILE.PATH ? ty * W + tx : m.nearestPath(tx, ty);
+      m.bfs(goal, FIELD);
+      let best = opts[0], bd = 1e9;
+      for (let i = 0; i < opts.length; i += 2) { const v = FIELD[opts[i + 1]]; if (v >= 0 && v < bd) { bd = v; best = opts[i]; } }
+      return best;
+    }
+    let best = opts[0], bd = Infinity;
+    for (let i = 0; i < opts.length; i += 2) {
+      const n = opts[i + 1];
+      const dd = PM.U.dist2(n % W, (n / W) | 0, t[0], t[1]);
+      if (dd < bd) { bd = dd; best = opts[i]; }
+    }
+    return best;
+  };
+  PM.DOOR_TILE = DOOR_TILE;
+
+  /* ---------- the bot: plays like a person, not a solver ----------
+     At every junction it scores each way it could go: dots and items it would
+     reach soon (worth less the further they are), minus places a ghost would
+     reach first. Skill sets how far it looks, how often it slips and how fast it
+     reacts; personality sets what it cares about. */
+  class Brain {
+    constructor(skill, personality, rng) {
+      this.skill = PM.BOT_SKILL[skill] || PM.BOT_SKILL.normal;
+      this.pers = PM.PERSONALITIES[personality] || PM.PERSONALITIES.greedy;
+      this.persId = personality;
+      this.rng = rng || Math.random;
+      this.buf = new Int16Array(W * H);
+      this.minG = new Int16Array(W * H);
+      this.q = new Int16Array(W * H);
+      this.gpow = new Float32Array(64);
+      for (let k = 0; k < 64; k++) this.gpow[k] = Math.pow(this.pers.gamma, k);
+      this.t = 0;
+      this.scaredT = 0;
+      // rehearsal scratch space
+      this.simRng = PM.rng(0x2545f491);
+      this.simPac = { id: 99, x: 0, y: 0, dir: 1, nextDir: 1, moving: true, alive: true, brain: null };
+      this.simPacs = [this.simPac];
+      this.simGhosts = [0, 1, 2, 3].map(() => ({}));
+      this.seen = new Int32Array(W * H);
+      this.stamp = 0;
+      const self = this;
+      this.follower = { // drives the imagined pac: plan first, then the obvious way
+        plan: null, i: 0,
+        decide(sh, p) {
+          const m = sh.maze, t = m.tileAt(p.x, p.y);
+          if (this.i === 0) { this.i = 1; return this.plan[0]; }
+          let exits = 0;
+          for (let e = 0; e < 4; e++) if (e !== OPP[p.dir] && m.adj[t * 4 + e] >= 0) exits++;
+          if (exits > 1 && this.i < this.plan.length) { const d = this.plan[this.i++]; if (m.adj[t * 4 + d] >= 0) return d; }
+          if (m.adj[t * 4 + p.dir] >= 0) return p.dir;
+          let best = p.dir, bd = -1;
+          for (let e = 0; e < 4; e++) {
+            const n = m.adj[t * 4 + e];
+            if (e === OPP[p.dir] || n < 0) continue;
+            if (self.minG[n] > bd) { bd = self.minG[n]; best = e; }
+          }
+          return best;
+        }
+      };
+      this.simPac.brain = this.follower;
+    }
+
+    /* follow a corridor from `from` going `dir` until the next junction.
+       slack = how many tiles ahead of the nearest ghost we stay along the way */
+    walk(m, from, dir, k0, minG, r, dots) {
+      let t = from, d = dir, k = k0, slack = 999;
+      for (let steps = 0; steps < 40; steps++) {
+        const nx = m.adj[t * 4 + d];
+        if (nx < 0) break;
+        t = nx; k++;
+        const sl = minG[t] - k * r;
+        if (sl < slack) slack = sl;
+        if (dots && dots[t] === 2 && slack > 0) return { tile: t, dir: d, k, slack: 40 }; // an energizer turns the tables
+        // count exits other than the way back
+        let exits = 0, only = -1;
+        for (let e = 0; e < 4; e++) if (e !== OPP[d] && m.adj[t * 4 + e] >= 0) { exits++; only = e; }
+        if (exits !== 1) break; // junction (or wrap-around end)
+        d = only;
+      }
+      return { tile: t, dir: d, k, slack };
+    }
+    /* ---- mental rehearsal ----
+       Replays the ghosts' real rules (they are deterministic) for a moment along one
+       route plan: [first direction, turn at the next junction]. Returns what happens. */
+    rehearse(game, pac, plan, horizon) {
+      const sh = this.shadow || (this.shadow = Object.create(PM.Game.prototype));
+      sh.maze = game.maze; sh.smart = false; sh.homeField = game.homeField; sh.spec = game.spec; sh.diff = game.diff;
+      sh.director = game.director; sh.event = game.event; sh.phaseIdx = game.phaseIdx; sh.freezeT = 0; sh.rng = this.simRng;
+      const sp = this.simPac;
+      sp.x = pac.x; sp.y = pac.y; sp.dir = plan[0]; sp.nextDir = plan[0]; sp.moving = true; sp.alive = true;
+      this.follower.plan = plan; this.follower.i = 0;
+      sh.pacs = this.simPacs;
+      const gs = this.simGhosts;
+      sh.ghosts = gs;
+      for (let i = 0; i < 4; i++) {
+        const g = game.ghosts[i], c = gs[i];
+        c.id = g.id; c.corner = g.corner; c.x = g.x; c.y = g.y; c.dir = g.dir; c.state = g.state; c.fright = g.fright;
+        c.elroy = g.elroy; c.moving = g.moving; c.reverse = false; c.target = null;
+        if (c.state === 'leaving') { c.state = 'active'; c.x = 14; c.y = 11.5; c.dir = 1; c.moving = true; }
+      }
+      const m = game.maze, dt = 1 / 30, steps = Math.round(horizon / dt);
+      const pSp = PM.TPS * (game.frightT > 0 ? game.spec.pacFright : game.spec.pac) * (pac.turbo > 0 ? 1.35 : 1);
+      const stamp = ++this.stamp;
+      let stall = 0, dots = 0, prey = 0;
+      for (let s = 1; s <= steps; s++) {
+        const now = s * dt;
+        if (stall > 0) stall -= dt;
+        else {
+          sh.move(sp, pSp * dt, true);
+          const t = m.tileAt(sp.x, sp.y);
+          if (this.seen[t] !== stamp) {
+            this.seen[t] = stamp;
+            const dv = game.dots[t];
+            if (dv === 2) return { dead: false, t: now, dots, prey, energ: true, safe: 8 };
+            if (dv === 1) { dots++; stall = 1 / 60; }
+            if (game.items[t]) dots += 3;
+          }
+        }
+        const frozen = game.freezeT > now;
+        for (const c of gs) {
+          if (c.state !== 'active') continue;
+          if (!frozen) { if (c.fright > 0) c.fright = Math.max(0, c.fright - dt); sh.move(c, sh.ghostSpeed(c) * dt, false); }
+          const dx = PM.U.wrapDx(c.x, sp.x), dy = c.y - sp.y;
+          if (dx * dx + dy * dy < 0.6) {
+            if (c.fright > 0 || frozen || pac.phase > now) { if (pac.phase <= now) { prey++; c.state = 'eaten'; } }
+            else return { dead: true, t: now, dots, prey };
+          }
+        }
+      }
+      let md = 99;
+      for (const c of gs) if (c.state === 'active' && c.fright <= 0) md = Math.min(md, Math.abs(PM.U.wrapDx(c.x, sp.x)) + Math.abs(c.y - sp.y));
+      return { dead: false, t: horizon, dots, prey, energ: false, safe: Math.min(md, 8) };
+    }
+
+    decide(game, pac) {
+      const m = game.maze, here = m.tileAt(pac.x, pac.y);
+      const sk = this.skill, ps = this.pers;
+      const threats = pac.phase > 0 ? [] : game.threatsFor(pac);
+      const preys = game.preysFor(pac);
+      const dotField = game.getDotField();
+      // earliest time any threat can reach each tile
+      const minG = this.minG.fill(999);
+      for (const th of threats) {
+        const f = th.field;
+        for (let t = 0; t < N; t++) { const v = f[t]; if (v >= 0 && v < minG[t]) minG[t] = v; }
+      }
+      const margin = pac.shield > 0 ? -1 : sk.margin + (ps.danger > 1.2 ? 0.5 : 0);
+      const r = game.threatRatio(pac);
+      const minThreat = minG[here];
+      const energ = minThreat < 8 ? 30 * ps.hunt : ps.hunt > 1.4 && minThreat < 14 ? 6 : 0.6;
+      const dw = sk.danger * ps.danger;
+      // when a ghost is within reach, imagine the next moments along every route
+      const look = threats.length > 0 && minThreat < 13;
+      const ahead = [-1e9, -1e9, -1e9, -1e9];
+      if (look) {
+        for (let d = 0; d < 4; d++) {
+          if (m.adj[here * 4 + d] < 0) continue;
+          const a = this.walk(m, here, d, 0, minG, 1, null);
+          const plans = [];
+          if (a.k <= 12) for (let e = 0; e < 4; e++) if (e !== OPP[a.dir] && m.adj[a.tile * 4 + e] >= 0) plans.push([d, e]);
+          if (!plans.length) plans.push([d]);
+          for (const pl of plans) {
+            const res = this.rehearse(game, pac, pl, sk.horizon);
+            const sc = res.dead ? -2000 + 500 * res.t
+              : res.dots * ps.dot * 1.5 + res.prey * 25 * ps.hunt + (res.energ ? 20 * ps.hunt + (minThreat < 8 ? 25 : 0) : 0) + res.safe * 4 * dw;
+            if (sc > ahead[d]) ahead[d] = sc;
+          }
+        }
+      }
+      const opts = [];
+      for (let d = 0; d < 4; d++) {
+        const n = m.adj[here * 4 + d];
+        if (n < 0) continue;
+        let v = 0;
+        // dots and items along the way, ignoring tiles a ghost gets to first
+        const dist = this.buf.fill(-1);
+        let h = 0, tl = 0;
+        this.q[tl++] = n; dist[n] = 1;
+        while (h < tl) {
+          const u = this.q[h++], du = dist[u];
+          if (du * r < minG[u] - margin) {
+            const w = this.gpow[du - 1];
+            const dot = game.dots[u];
+            if (dot === 1) v += ps.dot * w; else if (dot === 2) v += energ * w;
+            const it = game.items[u];
+            if (it) v += (it.kind === 'fruit' ? 14 : it.kind === 'power' ? 9 * ps.pow : 5) * w;
+          }
+          if (du >= sk.depth) continue;
+          for (let e = 0; e < 4; e++) {
+            const x = m.adj[u * 4 + e];
+            if (x < 0 || x === here || dist[x] >= 0) continue;
+            dist[x] = du + 1; this.q[tl++] = x;
+          }
+        }
+        const df = dotField[n];
+        if (df >= 0) v += 6 / (1 + df);
+        if (look) v += ahead[d];
+        else if (threats.length && this.walk(m, here, d, 0, minG, r, null).slack < margin) v -= 150 * dw; // the corridor is being cut off
+        for (const pr of preys) {
+          const k = dist[pr.tile];
+          if (k >= 0 && pr.time * 7 > k) v += pr.value * this.gpow[Math.min(63, k)];
+        }
+        if (d === pac.dir) v += 1.5; else if (d === OPP[pac.dir]) v -= 3;
+        if (minG[n] <= 1) v -= 500;
+        opts.push([d, v]);
+      }
+      if (!opts.length) return pac.dir;
+      opts.sort((a, b) => b[1] - a[1]);
+      this.last = opts;
+      if (opts.length > 1 && opts[1][1] > opts[0][1] - 40 && this.rng() < sk.mistake) return opts[1][0];
+      if (minThreat <= 4 && this.scaredT <= 0) { game.emote(pac, 'scared'); this.scaredT = 4; }
+      return opts[0][0];
+    }
+
+    // between junctions: turn around if a ghost is coming straight at us
+    tick(game, pac, dt) {
+      this.scaredT -= dt;
+      this.t += dt;
+      if (this.t < this.skill.react || pac.phase > 0) return;
+      this.t = 0;
+      const m = game.maze, here = m.tileAt(pac.x, pac.y);
+      const ahead = m.adj[here * 4 + pac.dir];
+      if (ahead < 0) return;
+      for (const th of game.threatsFor(pac)) {
+        const fh = th.field[here], fa = th.field[ahead];
+        if (fh >= 0 && fh <= 3 && fa >= 0 && fa < fh) {
+          const back = m.adj[here * 4 + OPP[pac.dir]];
+          if (back >= 0 && !(th.field[back] >= 0 && th.field[back] <= 1)) game.setDir(pac, OPP[pac.dir]);
+          return;
+        }
+      }
+    }
+  }
+  PM.Brain = Brain;
+})(window.PM = window.PM || {});
+
+/* PAC-MAN 2027* — game simulation (no DOM). Fixed 60 Hz steps.
+   Positions are in tiles; a tile's centre is at (i + 0.5, j + 0.5). */
+(function (PM) {
+  'use strict';
+  const W = PM.W, H = PM.H, DX = PM.DX, DY = PM.DY, OPP = PM.OPP, U = PM.U;
+  const START = [14, 23.5], DOOR = [14, 11.5], HOUSE_Y = 14.5;
+  const FRUIT_TILES = [17 * W + 13, 17 * W + 14];
+
+  class Pac {
+    constructor(o) {
+      Object.assign(this, {
+        id: 0, name: 'YOU', isPlayer: false, color: '#ffe14d', hat: 'none', trail: 'none', brain: null,
+        x: START[0], y: START[1], dir: 1, nextDir: 1, moving: true, score: 0, alive: true, spawn: START.slice(),
+        respawnT: 0, invuln: 0, stall: 0, power: 0, turbo: 0, magnet: 0, shield: 0, phase: 0, dbl: 0,
+        combo: 0, comboT: 0, bestCombo: 0, chain: 0, mouth: 0, emote: '', emoteT: 0, deadT: 0, coins: 0,
+        stats: { dots: 0, ghosts: 0, fruits: 0, powerups: 0, deaths: 0, rivals: 0, ghost4: 0 }
+      }, o);
+    }
+  }
+
+  class Ghost {
+    constructor(id) {
+      const d = PM.GHOSTS[id];
+      Object.assign(this, { id, name: d.name, color: d.color, corner: d.corner, home: d.home, x: d.home[0], y: d.home[1],
+        dir: 1, moving: true, state: 'house', fright: 0, reverse: false, target: null, elroy: 0, bob: 1 });
+    }
+  }
+
+  class Game {
+    constructor(o) {
+      o = o || {};
+      this.o = o;
+      this.mode = o.mode || 'classic';
+      this.battle = this.mode === 'battle';
+      this.features = this.mode !== 'classic'; // power-ups, combos, events
+      this.demo = !!o.demo;
+      this.seed = o.seed !== undefined ? o.seed >>> 0 : (Math.random() * 4294967295) >>> 0;
+      this.rng = PM.rng(this.seed ^ 0x5bd1e995);
+      this.diffId = this.mode === 'x27' ? (o.difficulty || 'normal') : 'normal';
+      this.diff = PM.DIFFICULTY[this.diffId];
+      this.smart = this.diff.smart;
+      this.events = [];
+      this.level = 1;
+      this.lives = this.battle ? 0 : 2;
+      this.nextLife = 10000;
+      this.time = 0;
+      this.frame = 0;
+      this.director = 1;
+      this.round = 1;
+      this.battleT = PM.BATTLE_TIME;
+      this.items = new Array(W * H).fill(null);
+      this.homeField = new Int16Array(W * H);
+      this.dotField = new Int16Array(W * H);
+      this.fieldCache = new Map();
+
+      const me = new Pac({ id: 0, name: o.name || 'YOU', isPlayer: true, color: o.color || '#ffe14d', hat: o.hat || 'none', trail: o.trail || 'none' });
+      if (o.autopilot) me.brain = new PM.Brain('hard', 'cautious', this.rng);
+      this.pacs = [me];
+      if (this.battle) {
+        const roster = PM.shuffle(PM.BOTS.slice(), this.rng);
+        const pers = PM.shuffle(Object.keys(PM.PERSONALITIES), this.rng);
+        const n = U.clamp(o.bots === undefined ? 3 : o.bots, 1, 3);
+        for (let i = 0; i < n; i++) {
+          const b = roster[i];
+          const p = new Pac({ id: i + 1, name: b.name, color: b.color, hat: b.hat, trail: 'none', skill: o.botSkill || 'normal', persId: pers[i] });
+          p.brain = new PM.Brain(o.botSkill || 'normal', pers[i], this.rng);
+          this.pacs.push(p);
+        }
+      }
+      this.player = me;
+      this.ghosts = [0, 1, 2, 3].map(i => new Ghost(i));
+      this.startLevel(true);
+    }
+
+    emit(type, data) { if (this.events.length < 400) this.events.push(Object.assign({}, data, { type })); }
+    drain() { const e = this.events; this.events = []; return e; }
+    emote(p, kind) { if (p.isPlayer && !p.brain) return; const l = PM.BOT_LINES[kind]; p.emote = l[this.rng.int(l.length)]; p.emoteT = 1.6; }
+
+    /* ---------------- levels ---------------- */
+    levelRng() { return PM.rng((this.seed + this.level * 2654435761) >>> 0); }
+    startLevel(first) {
+      const lr = this.levelRng();
+      if (this.mode === 'classic') this.maze = PM.Maze.classic();
+      else if (this.battle) this.maze = this.maze || PM.Maze.generate(this.seed);
+      else this.maze = PM.Maze.generate((this.seed + this.level * 7919) >>> 0);
+      if (this.mode === 'classic') this.theme = this.o.theme || 'retro';
+      else if (this.battle) this.theme = PM.WORLD_THEMES[this.seed % PM.WORLD_THEMES.length];
+      else this.theme = PM.WORLD_THEMES[(this.level - 1 + this.seed) % PM.WORLD_THEMES.length];
+      this.event = this.features && !this.battle && this.level >= 2 ? lr.pick(PM.EVENT_POOL) : 'none';
+      this.spec = PM.levelSpec(this.battle ? 3 : this.level);
+      if (this.battle) this.spec.fright = 5;
+      this.dots = Uint8Array.from(this.maze.dots0);
+      this.items.fill(null);
+      if (this.event === 'surge') this.scatterExtra(lr, 4, t => { this.dots[t] = 2; });
+      if (this.event === 'gold') this.scatterExtra(lr, 12, t => { this.items[t] = { kind: 'coin', tiles: [t], x: t % W + 0.5, y: ((t / W) | 0) + 0.5, t: Infinity }; });
+      this.dotsLeft = 0;
+      for (let i = 0; i < W * H; i++) if (this.dots[i]) this.dotsLeft++;
+      this.dotsTotal = this.dotsLeft;
+      this.dotsEaten = 0;
+      this.fruit = null;
+      this.fruitsShown = 0;
+      this.powerT = 7 + this.rng() * 4;
+      this.levelTime = 0;
+      this.deathsThisLevel = 0;
+      this.dotFieldDirty = true;
+      this.maze.bfs(PM.DOOR_TILE, this.homeField);
+      // spawn points: you at the classic start, rivals in the corners
+      const corners = [[1, 1], [26, 1], [26, 29], [1, 29]];
+      this.pacs.forEach((p, i) => {
+        if (i === 0) p.spawn = START.slice();
+        else { const t = this.maze.nearestPath(corners[i - 1][0], corners[i - 1][1]); p.spawn = [t % W + 0.5, ((t / W) | 0) + 0.5]; }
+      });
+      this.resetActors(false, first);
+      this.emit('levelStart', { level: this.level, event: this.event, theme: this.theme, first });
+    }
+    scatterExtra(r, n, fn) {
+      const cands = this.maze.paths.filter(t => this.dots[t] === 1 && !this.items[t]);
+      PM.shuffle(cands, r);
+      for (let i = 0; i < n && i < cands.length; i++) fn(cands[i]);
+    }
+
+    resetActors(afterDeath, first) {
+      for (const p of this.pacs) {
+        p.x = p.spawn[0]; p.y = p.spawn[1]; p.dir = 1; p.nextDir = 1; p.moving = true; p.stall = 0;
+        p.alive = true; p.deadT = 0; p.power = 0; p.turbo = 0; p.magnet = 0; p.phase = 0; p.dbl = 0; p.combo = 0; p.comboT = 0;
+        p.invuln = this.battle ? 2 : 0;
+        if (!this.battle) p.shield = 0;
+      }
+      for (const g of this.ghosts) {
+        g.x = g.home[0]; g.y = g.home[1]; g.fright = 0; g.reverse = false; g.moving = true; g.target = null; g.bob = g.id % 2 ? 1 : -1;
+        g.state = g.id === 0 ? 'active' : 'house';
+        g.dir = g.id === 0 ? 1 : 0;
+      }
+      this.phaseIdx = 0; this.phaseT = 0; this.frightT = 0; this.freezeT = 0; this.hitstop = 0; this.hitGhost = null; this.flashDur = 2;
+      this.counters = [0, 0, 0]; this.useGlobal = afterDeath; this.globalDots = 0; this.idleT = 0;
+      this.state = 'ready';
+      this.readyT = first && this.level === 1 ? 4.2 : this.battle ? 2.5 : 2;
+      this.clearT = 0;
+    }
+
+    /* ---------------- helpers ---------------- */
+    isScatter() { return this.phaseIdx % 2 === 0; }
+    setDir(p, d) {
+      p.nextDir = d;
+      if (d === OPP[p.dir]) { p.dir = d; p.moving = true; }
+    }
+    targetPacFor(g) {
+      let best = this.pacs[0], bd = Infinity;
+      for (const p of this.pacs) {
+        if (!p.alive) continue;
+        const dd = PM.U.wrapDx(p.x, g.x) ** 2 + (p.y - g.y) ** 2;
+        if (dd < bd) { bd = dd; best = p; }
+      }
+      return best;
+    }
+    fieldFor(key, tile, blocked) {
+      let c = this.fieldCache.get(key);
+      if (!c) { c = { frame: -1, field: new Int16Array(W * H) }; this.fieldCache.set(key, c); }
+      if (c.frame !== this.frame) { this.maze.bfs(tile, c.field, blocked); c.frame = this.frame; }
+      return c.field;
+    }
+    actorTile(a) {
+      const t = this.maze.tileAt(a.x, a.y);
+      return this.maze.type[t] === PM.TILE.PATH ? t : PM.DOOR_TILE;
+    }
+    threatsFor(p) {
+      const out = [];
+      if (this.freezeT <= 0) {
+        for (const g of this.ghosts) {
+          if ((g.state !== 'active' && g.state !== 'leaving') || g.fright > 0.6) continue;
+          // ghosts never turn around on their own, so the tile behind one is not where it goes next
+          const t = this.actorTile(g);
+          const behind = g.state === 'active' ? this.maze.adj[t * 4 + OPP[g.dir]] : -1;
+          out.push({ field: this.fieldFor('g' + g.id, t, behind), w: 1 });
+        }
+      }
+      if (this.battle && p.power <= 0) {
+        for (const r of this.pacs) if (r !== p && r.alive && r.power > 0.5) out.push({ field: this.fieldFor('p' + r.id, this.actorTile(r)), w: 1.2 });
+      }
+      return out;
+    }
+    // how much faster a ghost covers a tile than this pac (pacs pause a frame on every dot)
+    threatRatio(p) {
+      const pacSp = this.spec.pac * (p.turbo > 0 ? 1.35 : 1) * PM.TPS;
+      const eff = pacSp / (1 + pacSp / 60);
+      return U.clamp(PM.TPS * this.spec.ghost * this.diff.ghost * this.director * (this.event === 'rush' ? 1.1 : 1) / eff, 0.6, 1.6);
+    }
+    preysFor(p) {
+      const out = [], hunt = p.brain ? p.brain.pers.hunt : 1;
+      for (const g of this.ghosts) {
+        if (g.state !== 'active') continue;
+        if (g.fright > 1) out.push({ tile: this.actorTile(g), value: 25 * hunt, time: g.fright });
+        else if (this.freezeT > 1) out.push({ tile: this.actorTile(g), value: 8, time: this.freezeT });
+      }
+      if (this.battle && p.power > 1) {
+        for (const r of this.pacs) if (r !== p && r.alive && r.power <= 0 && r.invuln <= 0 && r.phase <= 0) out.push({ tile: this.actorTile(r), value: 30 * hunt, time: p.power });
+      }
+      return out;
+    }
+    getDotField() {
+      if (this.dotFieldDirty) {
+        const src = [];
+        for (let i = 0; i < W * H; i++) if (this.dots[i]) src.push(i);
+        this.maze.multiBfs(src, this.dotField);
+        this.dotFieldDirty = false;
+      }
+      return this.dotField;
+    }
+
+    /* ---------------- main step ---------------- */
+    step(dt) {
+      this.frame++;
+      for (const p of this.pacs) { p.emoteT -= dt; if (p.emoteT <= 0) p.emote = ''; }
+      switch (this.state) {
+        case 'ready':
+          this.readyT -= dt;
+          for (const g of this.ghosts) if (g.state === 'house') this.bob(g, dt);
+          if (this.readyT <= 0) { this.state = 'play'; this.emit('go', {}); }
+          return;
+        case 'dying':
+          this.dieT -= dt;
+          this.player.deadT += dt;
+          if (this.dieT <= 0) this.afterDeath();
+          return;
+        case 'clear':
+          this.clearT -= dt;
+          if (this.clearT <= 0) { this.level++; this.startLevel(false); }
+          return;
+        case 'over':
+          return;
+      }
+      if (this.hitstop > 0) {
+        this.hitstop -= dt;
+        if (this.hitstop <= 0) this.hitGhost = null;
+        for (const g of this.ghosts) if (g.state === 'eaten' && g !== this.hitGhost) this.updateGhost(g, dt);
+        return;
+      }
+      this.time += dt;
+      this.levelTime += dt;
+      if (this.battle) {
+        this.battleT -= dt;
+        if (this.battleT <= 0) { this.endBattle(); return; }
+      }
+      if (this.frightT > 0) this.frightT -= dt;
+      if (this.freezeT > 0) this.freezeT -= dt;
+      this.updatePhases(dt);
+      this.updateRelease(dt);
+      this.updateElroy();
+      for (const p of this.pacs) this.updatePac(p, dt);
+      for (const g of this.ghosts) this.updateGhost(g, dt);
+      this.collisions();
+      this.updateItems(dt);
+      if (this.dotsLeft <= 0 && this.state === 'play') this.levelCleared();
+    }
+
+    updatePhases(dt) {
+      if (this.frightT > 0) return;
+      this.phaseT += dt;
+      const ph = this.spec.phases;
+      while (this.phaseIdx < ph.length - 1 && this.phaseT >= ph[this.phaseIdx]) {
+        this.phaseT -= ph[this.phaseIdx];
+        this.phaseIdx++;
+        for (const g of this.ghosts) if (g.state === 'active') g.reverse = true;
+      }
+    }
+
+    updateRelease(dt) {
+      this.idleT += dt;
+      const g = this.ghosts.find(x => x.id > 0 && x.state === 'house');
+      if (!g) { this.useGlobal = false; return; }
+      const limit = this.useGlobal ? [7, 17, 32][g.id - 1] : this.spec.dotLimits[g.id - 1];
+      const count = this.useGlobal ? this.globalDots : this.counters[g.id - 1];
+      if (count >= limit || this.idleT >= this.spec.idleRelease) { this.idleT = 0; g.state = 'leaving'; }
+    }
+
+    updateElroy() {
+      const b = this.ghosts[0];
+      if (this.battle) { b.elroy = 0; return; }
+      const clydeHome = this.ghosts[3].state === 'house';
+      const scale = this.maze.dotTotal / 244;
+      b.elroy = clydeHome && this.useGlobal ? 0 : this.dotsLeft <= this.spec.elroyDots2 * scale ? 2 : this.dotsLeft <= this.spec.elroyDots1 * scale ? 1 : 0;
+    }
+
+    /* ---------------- movement ---------------- */
+    advance(a, s) {
+      a.x += DX[a.dir] * s; a.y += DY[a.dir] * s;
+      if (a.x < 0) a.x += W; else if (a.x >= W) a.x -= W;
+    }
+    move(a, dist, isPac) {
+      for (let guard = 0; guard < 12 && dist > 1e-9; guard++) {
+        const cx = Math.floor(a.x) + 0.5, cy = Math.floor(a.y) + 0.5;
+        if (Math.abs(a.x - cx) < 1e-6 && Math.abs(a.y - cy) < 1e-6) {
+          a.x = cx; a.y = cy;
+          if (isPac) this.pacAtCenter(a); else this.ghostAtCenter(a);
+          if (!a.moving) return;
+          const s = Math.min(dist, 0.999);
+          this.advance(a, s);
+          dist -= s;
+          continue;
+        }
+        if (!a.moving) return;
+        let to = DX[a.dir] ? (cx - a.x) * DX[a.dir] : (cy - a.y) * DY[a.dir];
+        if (to <= 1e-9) to += 1;
+        if (dist < to) { this.advance(a, dist); return; }
+        const nx = a.x + DX[a.dir] * to, ny = a.y + DY[a.dir] * to;
+        a.x = Math.round(nx - 0.5) + 0.5; a.y = Math.round(ny - 0.5) + 0.5;
+        if (a.x < 0) a.x += W; else if (a.x >= W) a.x -= W;
+        dist -= to;
+      }
+    }
+    pacAtCenter(p) {
+      const m = this.maze, t = m.tileAt(p.x, p.y);
+      if (p.brain) p.nextDir = p.brain.decide(this, p);
+      if (m.adj[t * 4 + p.nextDir] >= 0) { p.dir = p.nextDir; p.moving = true; }
+      else p.moving = m.adj[t * 4 + p.dir] >= 0;
+    }
+    ghostAtCenter(g) {
+      const m = this.maze, t = m.tileAt(g.x, g.y);
+      if (g.state === 'eaten') {
+        const tx = t % W, ty = (t / W) | 0;
+        if (ty === 11 && (tx === 13 || tx === 14)) { g.state = 'entering'; g.x = DOOR[0]; g.y = DOOR[1]; g.moving = false; return; }
+      }
+      g.dir = PM.ghostChoose(this, g, t);
+      g.moving = true;
+    }
+
+    updatePac(p, dt) {
+      if (!p.alive) {
+        p.deadT += dt;
+        if (this.battle) { p.respawnT -= dt; if (p.respawnT <= 0) this.respawn(p); }
+        return;
+      }
+      for (const k of ['invuln', 'power', 'turbo', 'magnet', 'shield', 'phase', 'dbl']) if (p[k] > 0) p[k] = Math.max(0, p[k] - dt);
+      if (p.comboT > 0) { p.comboT -= dt; if (p.comboT <= 0) p.combo = 0; }
+      if (p.stall > 0) { p.stall -= dt; return; }
+      if (p.brain) p.brain.tick(this, p, dt);
+      // cornering: a turn pressed just before or after a junction is taken right away
+      if (p.moving && p.nextDir !== p.dir && p.nextDir !== OPP[p.dir]) {
+        const cx = Math.floor(p.x) + 0.5, cy = Math.floor(p.y) + 0.5;
+        const off = DX[p.dir] ? (p.x - cx) * DX[p.dir] : (p.y - cy) * DY[p.dir];
+        const t = this.maze.tileAt(p.x, p.y);
+        if (Math.abs(off) < 0.3 && this.maze.adj[t * 4 + p.nextDir] >= 0) { p.x = cx; p.y = cy; p.dir = p.nextDir; }
+      }
+      const frightened = this.frightT > 0 || p.power > 0;
+      let sp = PM.TPS * (frightened ? this.spec.pacFright : this.spec.pac);
+      if (p.turbo > 0) sp *= 1.35;
+      if (p.brain && !p.isPlayer) sp *= p.brain.skill.speed;
+      const ox = p.x, oy = p.y;
+      this.move(p, sp * dt, true);
+      p.mouth += Math.abs(PM.U.wrapDx(p.x, ox)) + Math.abs(p.y - oy);
+      const t = this.maze.tileAt(p.x, p.y);
+      if (this.dots[t]) this.eatDot(p, t, false);
+      if (p.magnet > 0) {
+        const tx = Math.floor(p.x), ty = Math.floor(p.y);
+        for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+          if (dx * dx + dy * dy > 6.5 || ty + dy < 0 || ty + dy >= H) continue;
+          const i = this.maze.idx(tx + dx, ty + dy);
+          if (this.dots[i] === 1) this.eatDot(p, i, true);
+        }
+      }
+      const it = this.items[t];
+      if (it) this.pickup(p, it);
+    }
+
+    bob(g, dt) {
+      g.y += g.bob * 1.6 * dt;
+      if (g.y < HOUSE_Y - 0.5) { g.y = HOUSE_Y - 0.5; g.bob = 1; }
+      if (g.y > HOUSE_Y + 0.5) { g.y = HOUSE_Y + 0.5; g.bob = -1; }
+    }
+    ghostSpeed(g) {
+      const s = this.spec, t = this.maze.tileAt(g.x, g.y);
+      if (g.fright > 0) return PM.TPS * s.ghostFright;
+      if (this.maze.tunnel[t]) return PM.TPS * s.tunnel;
+      let f = s.ghost;
+      if (g.id === 0 && g.elroy === 2) f = s.elroy2; else if (g.id === 0 && g.elroy === 1) f = s.elroy1;
+      return PM.TPS * f * this.diff.ghost * this.director * (this.event === 'rush' ? 1.1 : 1);
+    }
+    updateGhost(g, dt) {
+      if (g.fright > 0) g.fright = Math.max(0, g.fright - dt);
+      const frozen = this.freezeT > 0 && g.state !== 'eaten' && g.state !== 'entering';
+      switch (g.state) {
+        case 'house':
+          if (!frozen) this.bob(g, dt);
+          break;
+        case 'leaving': {
+          if (frozen) break;
+          const s = 4 * dt;
+          if (Math.abs(g.x - DOOR[0]) > 0.01) g.x += U.clamp(DOOR[0] - g.x, -s, s);
+          else {
+            g.x = DOOR[0];
+            g.y -= s;
+            if (g.y <= DOOR[1]) { g.y = DOOR[1]; g.state = 'active'; g.dir = 1; g.moving = true; g.reverse = false; }
+          }
+          break;
+        }
+        case 'entering':
+          g.y += 8 * dt;
+          if (g.y >= HOUSE_Y) { g.y = HOUSE_Y; g.state = 'leaving'; g.fright = 0; this.emit('revive', { ghost: g.id }); }
+          break;
+        case 'eaten':
+          this.move(g, 15 * dt, false);
+          break;
+        default: // active
+          if (frozen) break;
+          if (g.reverse) { g.reverse = false; g.dir = OPP[g.dir]; g.moving = true; }
+          this.move(g, this.ghostSpeed(g) * dt, false);
+      }
+    }
+
+    /* ---------------- eating ---------------- */
+    addScore(p, pts) {
+      p.score += pts;
+      if (!this.battle && p.isPlayer && p.score >= this.nextLife) {
+        if (this.lives < 5) { this.lives++; this.emit('extraLife', {}); }
+        this.nextLife = this.mode === 'classic' ? Infinity : this.nextLife + 40000;
+      }
+    }
+    eatDot(p, t, magnet) {
+      const kind = this.dots[t];
+      this.dots[t] = 0;
+      this.dotsLeft--; this.dotsEaten++;
+      this.dotFieldDirty = true;
+      this.idleT = 0;
+      if (this.useGlobal) this.globalDots++;
+      else { const g = this.ghosts.find(x => x.id > 0 && x.state === 'house'); if (g) this.counters[g.id - 1]++; }
+      p.stats.dots++;
+      let pts = kind === 2 ? 50 : 10;
+      if (this.features) {
+        p.combo = p.comboT > 0 ? p.combo + 1 : 1;
+        p.comboT = 0.75;
+        p.bestCombo = Math.max(p.bestCombo, p.combo);
+        const mult = 1 + Math.min(3, Math.floor(p.combo / 20));
+        if (kind === 1) pts *= mult;
+        if (p.combo % 20 === 0 && mult > 1) this.emit('combo', { pac: p.id, mult, combo: p.combo, x: p.x, y: p.y });
+      }
+      if (p.dbl > 0) pts *= 2;
+      this.addScore(p, pts);
+      if (!magnet) p.stall = kind === 2 ? 3 / 60 : 1 / 60;
+      this.emit('dot', { pac: p.id, kind, x: t % W + 0.5, y: ((t / W) | 0) + 0.5, magnet, player: p.isPlayer });
+      if (kind === 2) this.energize(p);
+      const scale = this.maze.dotTotal / 244;
+      if ((this.dotsEaten === Math.round(70 * scale) || this.dotsEaten === Math.round(170 * scale)) && this.fruitsShown < 2) this.spawnFruit();
+    }
+    energize(p) {
+      const secs = this.spec.fright * this.diff.fright;
+      p.chain = 0;
+      if (this.battle) { p.power = Math.max(secs, 3); this.emote(p, 'powered'); }
+      this.frightT = secs;
+      this.flashDur = Math.min(secs, this.spec.flashes * 0.4);
+      for (const g of this.ghosts) {
+        if (g.state === 'eaten' || g.state === 'entering') continue;
+        if (g.state === 'active') g.reverse = true;
+        if (secs > 0) g.fright = secs;
+      }
+      this.emit('energizer', { pac: p.id, secs, player: p.isPlayer });
+    }
+    eatGhost(p, g, shatter) {
+      let pts;
+      if (shatter) pts = 200;
+      else { pts = 200 * Math.pow(2, Math.min(p.chain, 3)); p.chain++; }
+      if (this.event === 'rush') pts *= 2;
+      if (p.dbl > 0) pts *= 2;
+      this.addScore(p, pts);
+      g.state = 'eaten'; g.fright = 0; g.moving = true; g.reverse = false;
+      p.stats.ghosts++;
+      if (p.chain === 4 && !shatter) p.stats.ghost4++;
+      this.emote(p, 'ate');
+      this.emit('ghostEaten', { pac: p.id, ghost: g.id, pts, x: g.x, y: g.y, chain: p.chain, shatter, player: p.isPlayer });
+      if (!this.battle) { this.hitstop = this.mode === 'classic' ? 0.6 : 0.35; this.hitGhost = g; this.hitPts = pts; }
+    }
+    spawnFruit() {
+      const f = this.battle ? PM.FRUITS[this.rng.int(5)] : PM.fruitFor(this.level);
+      this.fruitsShown++;
+      const it = { kind: 'fruit', type: f.id, points: f.points, tiles: FRUIT_TILES, x: 14, y: 17.5, t: 9.4 + this.rng() * 0.6 };
+      for (const t of FRUIT_TILES) this.items[t] = it;
+      this.fruit = it;
+      this.emit('fruitSpawn', { what: f.id });
+    }
+    removeItem(it) { for (const t of it.tiles) if (this.items[t] === it) this.items[t] = null; if (it === this.fruit) this.fruit = null; }
+    pickup(p, it) {
+      this.removeItem(it);
+      if (it.kind === 'fruit') {
+        const pts = it.points * (p.dbl > 0 ? 2 : 1);
+        this.addScore(p, pts);
+        p.stats.fruits++;
+        this.emit('fruitEaten', { pac: p.id, what: it.type, pts, x: it.x, y: it.y, player: p.isPlayer });
+      } else if (it.kind === 'coin') {
+        this.addScore(p, 100);
+        if (p.isPlayer) p.coins++;
+        this.emit('coin', { pac: p.id, x: it.x, y: it.y, player: p.isPlayer });
+      } else if (it.kind === 'power') this.applyPower(p, it.type, it);
+    }
+    applyPower(p, type, it) {
+      p.stats.powerups++;
+      const def = PM.POWERUPS[type];
+      let hit = 0;
+      switch (type) {
+        case 'turbo': p.turbo = def.time; break;
+        case 'magnet': p.magnet = def.time; break;
+        case 'freeze': this.freezeT = def.time; break;
+        case 'shield': p.shield = def.time; break;
+        case 'phase': p.phase = def.time; break;
+        case 'double': p.dbl = def.time; break;
+        case 'shock':
+          p.chain = 0;
+          for (const g of this.ghosts) {
+            if (g.state !== 'active' && g.state !== 'leaving') continue;
+            if (PM.U.wrapDx(g.x, p.x) ** 2 + (g.y - p.y) ** 2 > 49) continue;
+            g.fright = Math.max(g.fright, 4); if (g.state === 'active') g.reverse = true; hit++;
+          }
+          this.frightT = Math.max(this.frightT, 4);
+          this.flashDur = 1.2;
+          break;
+      }
+      if (this.battle && p.brain) this.emote(p, 'powered');
+      this.emit('power', { pac: p.id, what: type, x: it ? it.x : p.x, y: it ? it.y : p.y, hit, player: p.isPlayer });
+    }
+    updateItems(dt) {
+      if (this.fruit) { this.fruit.t -= dt; if (this.fruit.t <= 0) { this.removeItem(this.fruit); this.emit('fruitGone', {}); } }
+      if (!this.features) return;
+      for (const t of this.maze.paths) {
+        const it = this.items[t];
+        if (it && it.kind === 'power' && it.tiles[0] === t) { it.t -= dt; if (it.t <= 0) this.removeItem(it); }
+      }
+      this.powerT -= dt;
+      if (this.powerT > 0) return;
+      this.powerT = this.battle ? 6 + this.rng() * 4 : 9 + this.rng() * 6;
+      let count = 0;
+      for (const t of this.maze.paths) if (this.items[t] && this.items[t].kind === 'power') count++;
+      if (count >= (this.battle ? 3 : 2)) return;
+      const ok = this.maze.paths.filter(t => {
+        const x = t % W, y = (t / W) | 0;
+        if (this.items[t] || this.maze.tunnel[t] || (y >= 9 && y <= 19 && x >= 7 && x <= 20)) return false;
+        return this.pacs.every(p => !p.alive || PM.U.wrapDx(p.x, x + 0.5) ** 2 + (p.y - y - 0.5) ** 2 > 36);
+      });
+      if (!ok.length) return;
+      const t = ok[this.rng.int(ok.length)];
+      const type = PM.POWERUP_ORDER[this.rng.int(PM.POWERUP_ORDER.length)];
+      this.items[t] = { kind: 'power', type, tiles: [t], x: t % W + 0.5, y: ((t / W) | 0) + 0.5, t: 14 };
+      this.emit('powerSpawn', { what: type });
+    }
+
+    /* ---------------- collisions & lives ---------------- */
+    near(a, b) { return PM.U.wrapDx(a.x, b.x) ** 2 + (a.y - b.y) ** 2 < 0.5; }
+    collisions() {
+      for (const p of this.pacs) {
+        if (!p.alive || this.state !== 'play') continue;
+        for (const g of this.ghosts) {
+          if ((g.state !== 'active' && g.state !== 'leaving') || !this.near(p, g)) continue;
+          if (g.fright > 0) { this.eatGhost(p, g, false); continue; }
+          if (this.freezeT > 0) { this.eatGhost(p, g, true); continue; }
+          if (p.phase > 0 || p.invuln > 0) continue;
+          if (p.shield > 0) {
+            p.shield = 0; p.invuln = 1;
+            g.state = 'eaten'; g.fright = 0; g.moving = true;
+            this.emit('shieldBlock', { pac: p.id, x: p.x, y: p.y, player: p.isPlayer });
+            continue;
+          }
+          this.killPac(p);
+          break;
+        }
+      }
+      if (!this.battle) return;
+      for (let i = 0; i < this.pacs.length; i++) {
+        for (let j = i + 1; j < this.pacs.length; j++) {
+          const a = this.pacs[i], b = this.pacs[j];
+          if (!a.alive || !b.alive || !this.near(a, b)) continue;
+          if (a.power > 0 && b.power <= 0) this.eatRival(a, b);
+          else if (b.power > 0 && a.power <= 0) this.eatRival(b, a);
+        }
+      }
+    }
+    eatRival(a, b) {
+      if (b.invuln > 0 || b.phase > 0) return;
+      if (b.shield > 0) { b.shield = 0; b.invuln = 1.2; this.emit('shieldBlock', { pac: b.id, x: b.x, y: b.y, player: b.isPlayer }); return; }
+      const steal = Math.floor(b.score * 0.15 / 10) * 10;
+      b.score -= steal;
+      this.addScore(a, 1000 + steal);
+      a.stats.rivals++;
+      this.emote(a, 'ate');
+      this.emit('rivalEaten', { by: a.id, pac: b.id, pts: 1000 + steal, x: b.x, y: b.y, player: a.isPlayer, victim: b.isPlayer });
+      this.killPac(b, true);
+    }
+    killPac(p, byRival) {
+      p.alive = false; p.deadT = 0; p.stats.deaths++;
+      p.combo = 0; p.comboT = 0; p.power = 0;
+      this.emote(p, 'died');
+      this.emit('death', { pac: p.id, x: p.x, y: p.y, player: p.isPlayer, byRival: !!byRival });
+      if (this.battle) {
+        p.respawnT = 3;
+        if (!byRival) { const loss = Math.floor(p.score * 0.1 / 10) * 10; p.score -= loss; }
+        return;
+      }
+      this.state = 'dying';
+      this.dieT = 2.6;
+      this.deathsThisLevel++;
+      if (this.mode === 'x27' && this.diffId === 'normal') this.director = Math.max(0.9, this.director - 0.04);
+    }
+    respawn(p) {
+      p.alive = true; p.x = p.spawn[0]; p.y = p.spawn[1]; p.dir = 1; p.nextDir = 1; p.moving = true; p.invuln = 2; p.deadT = 0;
+      this.emit('respawn', { pac: p.id, x: p.x, y: p.y });
+    }
+    afterDeath() {
+      if (this.lives <= 0) { this.state = 'over'; this.emit('gameOver', { score: this.player.score, level: this.level }); return; }
+      this.lives--;
+      this.fruit && this.removeItem(this.fruit);
+      this.resetActors(true, false);
+      this.emit('lifeLost', { lives: this.lives });
+    }
+    levelCleared() {
+      if (this.battle) {
+        this.dots.set(this.maze.dots0);
+        this.dotsLeft = this.dotsTotal = this.maze.dotTotal;
+        this.dotsEaten = 0; this.fruitsShown = 0; this.round++; this.dotFieldDirty = true;
+        this.emit('refill', { round: this.round });
+        return;
+      }
+      let bonus = 0;
+      if (this.event === 'speedrun') {
+        const par = this.dotsTotal * 0.13 + 12;
+        bonus = Math.max(0, Math.round((par - this.levelTime) * 10) * 10);
+        if (bonus) this.addScore(this.player, bonus);
+      }
+      if (this.mode === 'x27' && this.diffId === 'normal' && !this.deathsThisLevel) this.director = Math.min(1.06, this.director + 0.02);
+      this.state = 'clear';
+      this.clearT = 2.4;
+      this.frightT = 0;
+      this.emit('levelClear', { level: this.level, perfect: this.deathsThisLevel === 0, bonus, time: this.levelTime });
+    }
+    endBattle() {
+      this.state = 'over';
+      const ranking = this.pacs.slice().sort((a, b) => b.score - a.score);
+      this.emit('battleEnd', { ranking: ranking.map(p => p.id) });
+    }
+  }
+  PM.Game = Game;
+  PM.Pac = Pac;
+})(window.PM = window.PM || {});
+
+/* PAC-MAN 2027* — canvas renderer. Everything is drawn in tile units. */
+(function (PM) {
+  'use strict';
+  const W = PM.W, H = PM.H, PI = Math.PI, TAU = PI * 2;
+  const DIR_ANGLE = [-PI / 2, PI, PI / 2, 0];
+  const FONT = "'Orbitron', 'Rubik', system-ui, sans-serif";
+
+  /* ---------- small cached glow sprites (cheaper than shadowBlur every frame) ---------- */
+  const glowCache = new Map();
+  function glow(color, px) {
+    const key = color + px;
+    let c = glowCache.get(key);
+    if (c) return c;
+    c = document.createElement('canvas');
+    c.width = c.height = px * 2;
+    const g = c.getContext('2d');
+    const gr = g.createRadialGradient(px, px, 0, px, px, px);
+    gr.addColorStop(0, color); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.globalAlpha = 0.55; g.fillStyle = gr; g.fillRect(0, 0, px * 2, px * 2);
+    glowCache.set(key, c);
+    return c;
+  }
+  const rainbow = t => 'hsl(' + ((t * 140) % 360) + ',100%,60%)';
+
+  /* ================= shapes (tile units, any canvas) ================= */
+  const Draw = {
+    pacColor(color, t) {
+      if (color === 'rainbow') return rainbow(t);
+      if (color === 'gold') return '#ffcf3a';
+      return color;
+    },
+    pac(ctx, o) {
+      // o: x, y, r, dir, mouth (0..1 open), color, hat, t, outline, alpha
+      const r = o.r || 0.8, a = DIR_ANGLE[o.dir === undefined ? 3 : o.dir];
+      const open = (o.mouth === undefined ? 0.2 : o.mouth) * PI * 0.42;
+      ctx.save();
+      if (o.alpha !== undefined) ctx.globalAlpha *= o.alpha;
+      let fill = Draw.pacColor(o.color, o.t || 0);
+      if (o.color === 'gold') {
+        const g = ctx.createLinearGradient(o.x - r, o.y - r, o.x + r, o.y + r);
+        g.addColorStop(0, '#fff2a8'); g.addColorStop(0.5, '#ffc21a'); g.addColorStop(1, '#c98a00');
+        fill = g;
+      }
+      ctx.beginPath();
+      if (o.death !== undefined) { // arcade death: the mouth opens until nothing is left
+        const f = o.death;
+        ctx.moveTo(o.x, o.y);
+        ctx.arc(o.x, o.y, r, -PI / 2 + f * PI, -PI / 2 + TAU - f * PI);
+      } else {
+        ctx.moveTo(o.x, o.y);
+        ctx.arc(o.x, o.y, r, a + open, a + TAU - open);
+      }
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+      if (o.color === '#1b1b2e' || o.outline) { ctx.lineWidth = 0.09; ctx.strokeStyle = o.outline || '#7b5cff'; ctx.stroke(); }
+      // little shine for depth
+      if (o.death === undefined) {
+        ctx.globalAlpha *= 0.35;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.ellipse(o.x - r * 0.3, o.y - r * 0.45, r * 0.22, r * 0.12, -0.5, 0, TAU); ctx.fill();
+      }
+      ctx.restore();
+      if (o.hat && o.hat !== 'none' && o.death === undefined) Draw.hat(ctx, o.hat, o.x, o.y, r, o.dir, o.t || 0);
+    },
+    hat(ctx, hat, x, y, r, dir, t) {
+      const top = y - r * 0.82, face = dir === 1 ? -1 : 1;
+      ctx.save();
+      switch (hat) {
+        case 'cap':
+          ctx.fillStyle = '#ff3b5c';
+          ctx.beginPath(); ctx.ellipse(x, top + 0.05, r * 0.62, r * 0.42, 0, PI, TAU); ctx.fill();
+          ctx.fillRect(Math.min(x, x + face * r * 0.9), top, r * 0.9, 0.12);
+          ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(x, top - r * 0.38, 0.07, 0, TAU); ctx.fill();
+          break;
+        case 'bow':
+          ctx.fillStyle = '#ff5ec8';
+          ctx.beginPath(); ctx.moveTo(x - 0.15, top - 0.05); ctx.lineTo(x - 0.55, top - 0.35); ctx.lineTo(x - 0.55, top + 0.25); ctx.closePath(); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(x + 0.15, top - 0.05); ctx.lineTo(x + 0.55, top - 0.35); ctx.lineTo(x + 0.55, top + 0.25); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = '#ff9be0'; ctx.beginPath(); ctx.arc(x, top - 0.05, 0.16, 0, TAU); ctx.fill();
+          break;
+        case 'party': {
+          const g = ctx.createLinearGradient(x - 0.35, 0, x + 0.35, 0);
+          g.addColorStop(0, '#4ef2ff'); g.addColorStop(0.5, '#ff5ec8'); g.addColorStop(1, '#ffe14d');
+          ctx.fillStyle = g;
+          ctx.beginPath(); ctx.moveTo(x - 0.38, top + 0.12); ctx.lineTo(x + 0.38, top + 0.12); ctx.lineTo(x + 0.05, top - 0.85); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(x + 0.05, top - 0.85, 0.13, 0, TAU); ctx.fill();
+          break;
+        }
+        case 'headphones':
+          ctx.strokeStyle = '#2a2c48'; ctx.lineWidth = 0.13;
+          ctx.beginPath(); ctx.arc(x, y - 0.05, r * 0.98, PI * 1.08, PI * 1.92); ctx.stroke();
+          ctx.fillStyle = '#4ef2ff';
+          ctx.fillRect(x - r * 1.08, y - 0.3, 0.24, 0.48);
+          ctx.fillRect(x + r * 1.08 - 0.24, y - 0.3, 0.24, 0.48);
+          break;
+        case 'antenna': {
+          ctx.strokeStyle = '#c8cbe0'; ctx.lineWidth = 0.07;
+          ctx.beginPath(); ctx.moveTo(x, top + 0.1); ctx.lineTo(x + 0.12, top - 0.55); ctx.stroke();
+          const on = Math.floor(t * 3) % 2 === 0;
+          ctx.fillStyle = on ? '#ff3b5c' : '#ffd23a';
+          ctx.beginPath(); ctx.arc(x + 0.12, top - 0.6, 0.14, 0, TAU); ctx.fill();
+          break;
+        }
+        case 'horns':
+          ctx.fillStyle = '#a8aec8';
+          ctx.beginPath(); ctx.ellipse(x, top + 0.12, r * 0.7, r * 0.3, 0, PI, TAU); ctx.fill();
+          ctx.fillStyle = '#f4f0e0';
+          for (const s of [-1, 1]) {
+            ctx.beginPath(); ctx.moveTo(x + s * 0.45, top + 0.02); ctx.quadraticCurveTo(x + s * 0.95, top - 0.2, x + s * 0.8, top - 0.7);
+            ctx.quadraticCurveTo(x + s * 0.7, top - 0.25, x + s * 0.3, top - 0.1); ctx.closePath(); ctx.fill();
+          }
+          break;
+        case 'halo':
+          ctx.strokeStyle = '#ffe14d'; ctx.lineWidth = 0.12; ctx.globalAlpha *= 0.9;
+          ctx.beginPath(); ctx.ellipse(x, top - 0.38 + Math.sin(t * 3) * 0.05, r * 0.55, r * 0.18, 0, 0, TAU); ctx.stroke();
+          break;
+        case 'crown':
+          ctx.fillStyle = '#ffcf3a';
+          ctx.beginPath();
+          ctx.moveTo(x - 0.48, top + 0.12); ctx.lineTo(x - 0.48, top - 0.32); ctx.lineTo(x - 0.24, top - 0.08); ctx.lineTo(x, top - 0.46);
+          ctx.lineTo(x + 0.24, top - 0.08); ctx.lineTo(x + 0.48, top - 0.32); ctx.lineTo(x + 0.48, top + 0.12); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = '#ff3b5c'; ctx.beginPath(); ctx.arc(x, top - 0.02, 0.08, 0, TAU); ctx.fill();
+          break;
+      }
+      ctx.restore();
+    },
+    ghost(ctx, o) {
+      // o: x, y, color, dir, t, mode ('normal' | 'fright' | 'flash' | 'eyes' | 'frozen'), r
+      const r = o.r || 0.82, x = o.x, y = o.y - 0.05, t = o.t || 0;
+      ctx.save();
+      if (o.mode !== 'eyes') {
+        const body = o.mode === 'fright' ? '#2b3cff' : o.mode === 'flash' ? '#f4f4ff' : o.mode === 'frozen' ? '#bfefff' : o.color;
+        ctx.fillStyle = body;
+        ctx.beginPath();
+        ctx.arc(x, y - 0.08, r, PI, 0);
+        const bottom = y + r * 0.86, n = 6, step = (2 * r) / n, phase = Math.floor(t * 8) % 2;
+        ctx.lineTo(x + r, bottom);
+        for (let i = 0; i < n; i++) {
+          const px = x + r - (i + 0.5) * step;
+          ctx.lineTo(px, bottom - ((i + phase) % 2 ? 0.22 : -0.02));
+        }
+        ctx.lineTo(x - r, bottom);
+        ctx.closePath();
+        ctx.fill();
+        if (o.mode === 'fright' || o.mode === 'flash') {
+          ctx.fillStyle = o.mode === 'flash' ? '#ff3b5c' : '#ffd8b8';
+          ctx.beginPath(); ctx.arc(x - 0.27, y - 0.2, 0.11, 0, TAU); ctx.arc(x + 0.27, y - 0.2, 0.11, 0, TAU); ctx.fill();
+          ctx.strokeStyle = ctx.fillStyle; ctx.lineWidth = 0.08;
+          ctx.beginPath();
+          for (let i = 0; i <= 6; i++) ctx.lineTo(x - 0.48 + i * 0.16, y + 0.28 + (i % 2 ? -0.09 : 0.05));
+          ctx.stroke();
+          ctx.restore();
+          return;
+        }
+        if (o.mode === 'frozen') {
+          ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 0.06;
+          ctx.strokeRect(x - r - 0.1, y - r - 0.15, 2 * r + 0.2, 2 * r + 0.3);
+          ctx.fillStyle = 'rgba(160,230,255,0.35)';
+          ctx.fillRect(x - r - 0.1, y - r - 0.15, 2 * r + 0.2, 2 * r + 0.3);
+        }
+      }
+      const dx = PM.DX[o.dir === undefined ? 1 : o.dir] * 0.11, dy = PM.DY[o.dir === undefined ? 1 : o.dir] * 0.11;
+      for (const s of [-1, 1]) {
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.ellipse(x + s * 0.3 + dx * 0.6, y - 0.22 + dy * 0.6, 0.22, 0.28, 0, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#2233ff';
+        ctx.beginPath(); ctx.arc(x + s * 0.3 + dx * 1.6, y - 0.2 + dy * 1.6, 0.12, 0, TAU); ctx.fill();
+      }
+      ctx.restore();
+    },
+    fruit(ctx, type, x, y, s) {
+      s = s || 1;
+      ctx.save();
+      ctx.translate(x, y); ctx.scale(s, s);
+      const circle = (cx, cy, r, c) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill(); };
+      const leaf = (cx, cy, rot, c) => { ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot); ctx.fillStyle = c || '#3ddc5a'; ctx.beginPath(); ctx.ellipse(0, 0, 0.22, 0.1, 0, 0, TAU); ctx.fill(); ctx.restore(); };
+      switch (type) {
+        case 'cherry':
+          ctx.strokeStyle = '#7a4a1a'; ctx.lineWidth = 0.08;
+          ctx.beginPath(); ctx.moveTo(-0.3, 0.2); ctx.quadraticCurveTo(0, -0.4, 0.35, -0.55); ctx.moveTo(0.3, 0.25); ctx.quadraticCurveTo(0.3, -0.2, 0.35, -0.55); ctx.stroke();
+          circle(-0.3, 0.3, 0.3, '#ff2244'); circle(0.3, 0.35, 0.3, '#ff2244');
+          circle(-0.38, 0.22, 0.07, '#ffffff'); circle(0.22, 0.27, 0.07, '#ffffff');
+          break;
+        case 'strawberry':
+          ctx.fillStyle = '#ff2b4a';
+          ctx.beginPath(); ctx.moveTo(-0.45, -0.2); ctx.quadraticCurveTo(0, -0.45, 0.45, -0.2); ctx.quadraticCurveTo(0.4, 0.3, 0, 0.6); ctx.quadraticCurveTo(-0.4, 0.3, -0.45, -0.2); ctx.fill();
+          ctx.fillStyle = '#ffe9a8';
+          for (const [px, py] of [[-0.2, 0], [0.15, -0.05], [0, 0.25], [-0.1, 0.4], [0.2, 0.2]]) ctx.fillRect(px, py, 0.06, 0.06);
+          leaf(-0.15, -0.3, -0.4); leaf(0.15, -0.3, 0.4);
+          break;
+        case 'orange':
+          circle(0, 0.08, 0.48, '#ff9a1f'); leaf(0.15, -0.45, 0.3); circle(-0.15, -0.08, 0.08, '#ffd08a');
+          break;
+        case 'apple':
+          circle(-0.18, 0.1, 0.38, '#ff2b3a'); circle(0.18, 0.1, 0.38, '#ff2b3a');
+          ctx.strokeStyle = '#7a4a1a'; ctx.lineWidth = 0.08; ctx.beginPath(); ctx.moveTo(0, -0.2); ctx.lineTo(0.05, -0.5); ctx.stroke();
+          leaf(0.2, -0.42, -0.4); circle(-0.25, -0.02, 0.08, '#ffb0b8');
+          break;
+        case 'melon':
+          circle(0, 0.05, 0.5, '#3ddc5a');
+          ctx.strokeStyle = '#1e8a34'; ctx.lineWidth = 0.07;
+          for (const k of [-0.25, 0, 0.25]) { ctx.beginPath(); ctx.ellipse(k, 0.05, 0.08, 0.48, 0, 0, TAU); ctx.stroke(); }
+          break;
+        case 'ship':
+          ctx.fillStyle = '#4ef2ff';
+          ctx.beginPath(); ctx.moveTo(0, -0.55); ctx.lineTo(0.18, 0.1); ctx.lineTo(0.55, 0.45); ctx.lineTo(0, 0.25); ctx.lineTo(-0.55, 0.45); ctx.lineTo(-0.18, 0.1); ctx.closePath(); ctx.fill();
+          circle(0, -0.08, 0.1, '#ff3b5c');
+          break;
+        case 'bell':
+          ctx.fillStyle = '#ffd23a';
+          ctx.beginPath(); ctx.moveTo(-0.45, 0.35); ctx.quadraticCurveTo(-0.4, -0.5, 0, -0.5); ctx.quadraticCurveTo(0.4, -0.5, 0.45, 0.35); ctx.closePath(); ctx.fill();
+          circle(0, 0.42, 0.12, '#ffffff'); circle(-0.15, -0.2, 0.06, '#fff7c8');
+          break;
+        case 'key':
+          ctx.strokeStyle = '#7fe7ff'; ctx.lineWidth = 0.13;
+          ctx.beginPath(); ctx.arc(0, -0.3, 0.22, 0, TAU); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, -0.08); ctx.lineTo(0, 0.55); ctx.moveTo(0, 0.3); ctx.lineTo(0.2, 0.3); ctx.moveTo(0, 0.48); ctx.lineTo(0.2, 0.48); ctx.stroke();
+          break;
+        case 'coin':
+          circle(0, 0, 0.42, '#ffcf3a'); circle(0, 0, 0.3, '#ffe27a');
+          ctx.fillStyle = '#c98a00'; ctx.fillRect(-0.05, -0.2, 0.1, 0.4);
+          break;
+      }
+      ctx.restore();
+    },
+    power(ctx, type, x, y, s, t) {
+      const def = PM.POWERUPS[type];
+      s = s || 1;
+      ctx.save();
+      ctx.translate(x, y); ctx.scale(s, s);
+      ctx.fillStyle = 'rgba(10,10,30,0.85)';
+      ctx.beginPath(); ctx.arc(0, 0, 0.55, 0, TAU); ctx.fill();
+      ctx.lineWidth = 0.09; ctx.strokeStyle = def.color;
+      ctx.beginPath(); ctx.arc(0, 0, 0.55, 0, TAU); ctx.stroke();
+      ctx.fillStyle = def.color; ctx.strokeStyle = def.color; ctx.lineWidth = 0.1; ctx.lineCap = 'round';
+      switch (type) {
+        case 'turbo':
+          ctx.beginPath(); ctx.moveTo(0.08, -0.38); ctx.lineTo(-0.2, 0.05); ctx.lineTo(0.02, 0.05); ctx.lineTo(-0.08, 0.38); ctx.lineTo(0.22, -0.06); ctx.lineTo(0, -0.06); ctx.closePath(); ctx.fill();
+          break;
+        case 'magnet':
+          ctx.lineWidth = 0.14;
+          ctx.beginPath(); ctx.arc(0, 0, 0.24, 0, PI); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(-0.24, 0); ctx.lineTo(-0.24, -0.28); ctx.moveTo(0.24, 0); ctx.lineTo(0.24, -0.28); ctx.stroke();
+          ctx.fillStyle = '#ffffff'; ctx.fillRect(-0.31, -0.36, 0.14, 0.1); ctx.fillRect(0.17, -0.36, 0.14, 0.1);
+          break;
+        case 'freeze':
+          for (let i = 0; i < 3; i++) { const a = i * PI / 3; ctx.beginPath(); ctx.moveTo(Math.cos(a) * 0.34, Math.sin(a) * 0.34); ctx.lineTo(-Math.cos(a) * 0.34, -Math.sin(a) * 0.34); ctx.stroke(); }
+          break;
+        case 'shield':
+          ctx.beginPath(); ctx.moveTo(0, -0.36); ctx.lineTo(0.3, -0.22); ctx.quadraticCurveTo(0.28, 0.2, 0, 0.38); ctx.quadraticCurveTo(-0.28, 0.2, -0.3, -0.22); ctx.closePath(); ctx.fill();
+          break;
+        case 'shock':
+          for (const rr of [0.12, 0.24, 0.36]) { ctx.beginPath(); ctx.arc(0, 0, rr, 0, TAU); ctx.stroke(); }
+          break;
+        case 'phase':
+          ctx.globalAlpha *= 0.85;
+          ctx.beginPath(); ctx.arc(0, -0.05, 0.27, PI, 0); ctx.lineTo(0.27, 0.3); ctx.lineTo(0.1, 0.2); ctx.lineTo(0, 0.3); ctx.lineTo(-0.1, 0.2); ctx.lineTo(-0.27, 0.3); ctx.closePath(); ctx.fill();
+          break;
+        case 'double':
+          ctx.font = '800 0.42px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('2x', 0, 0.03);
+          break;
+      }
+      ctx.restore();
+    }
+  };
+  PM.Draw = Draw;
+
+  /* ================= particles & floating text ================= */
+  class FX {
+    constructor() { this.parts = []; this.texts = []; this.rings = []; }
+    clear() { this.parts.length = 0; this.texts.length = 0; this.rings.length = 0; }
+    burst(x, y, color, n, speed, size, life) {
+      for (let i = 0; i < n && this.parts.length < 900; i++) {
+        const a = Math.random() * TAU, s = (0.3 + Math.random()) * (speed || 6);
+        this.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: (life || 0.6) * (0.6 + Math.random() * 0.6), max: life || 0.6,
+          color: typeof color === 'function' ? color() : color, size: (size || 0.14) * (0.6 + Math.random() * 0.8), shape: 'dot', drag: 3 });
+      }
+    }
+    spawn(p) { if (this.parts.length < 900) this.parts.push(Object.assign({ vx: 0, vy: 0, drag: 2, shape: 'dot', size: 0.12, life: 0.5, max: 0.5 }, p)); }
+    text(x, y, str, color, size, life) { this.texts.push({ x, y, str, color, size: size || 0.9, life: life || 1, max: life || 1 }); }
+    ring(x, y, color, r, life) { this.rings.push({ x, y, color, r: r || 3, life: life || 0.5, max: life || 0.5 }); }
+    update(dt) {
+      for (const p of this.parts) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; const k = Math.exp(-p.drag * dt); p.vx *= k; p.vy *= k; if (p.grav) p.vy += p.grav * dt; }
+      this.parts = this.parts.filter(p => p.life > 0);
+      for (const t of this.texts) { t.life -= dt; t.y -= dt * 0.8; }
+      this.texts = this.texts.filter(t => t.life > 0);
+      for (const r of this.rings) r.life -= dt;
+      this.rings = this.rings.filter(r => r.life > 0);
+    }
+    draw(ctx) {
+      for (const p of this.parts) {
+        const a = Math.max(0, p.life / p.max);
+        ctx.globalAlpha = a;
+        ctx.fillStyle = p.color;
+        if (p.shape === 'square') ctx.fillRect(p.x - p.size, p.y - p.size, p.size * 2, p.size * 2);
+        else if (p.shape === 'heart') {
+          const s = p.size;
+          ctx.beginPath(); ctx.moveTo(p.x, p.y + s); ctx.bezierCurveTo(p.x - s * 2, p.y - s * 0.4, p.x - s * 0.6, p.y - s * 1.6, p.x, p.y - s * 0.5);
+          ctx.bezierCurveTo(p.x + s * 0.6, p.y - s * 1.6, p.x + s * 2, p.y - s * 0.4, p.x, p.y + s); ctx.fill();
+        } else if (p.shape === 'star') {
+          ctx.fillRect(p.x - p.size, p.y - p.size * 0.25, p.size * 2, p.size * 0.5);
+          ctx.fillRect(p.x - p.size * 0.25, p.y - p.size, p.size * 0.5, p.size * 2);
+        } else { ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (0.4 + 0.6 * a), 0, TAU); ctx.fill(); }
+      }
+      for (const r of this.rings) {
+        const k = 1 - r.life / r.max;
+        ctx.globalAlpha = 1 - k;
+        ctx.strokeStyle = r.color; ctx.lineWidth = 0.15 * (1 - k) + 0.03;
+        ctx.beginPath(); ctx.arc(r.x, r.y, 0.3 + r.r * k, 0, TAU); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+  PM.FX = FX;
+
+  /* ================= the renderer ================= */
+  class Renderer {
+    constructor(canvas) {
+      this.cv = canvas;
+      this.ctx = canvas.getContext('2d');
+      this.T = 16; this.dpr = 1; this.S = 16;
+      this.fx = new FX();
+      this.mazeKey = '';
+      this.time = 0;
+      this.shake = 0;
+      this.dark = null;
+      this.stars = Array.from({ length: 90 }, () => ({ x: Math.random() * W, y: Math.random() * H, s: Math.random() * 0.08 + 0.02, p: Math.random() * TAU }));
+      this.showTargets = false;
+      this.reduced = false;
+    }
+    resize(w, h) {
+      const T = Math.max(6, Math.min(w / W, h / H));
+      this.T = T;
+      this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+      this.S = T * this.dpr;
+      this.cv.style.width = Math.round(W * T) + 'px';
+      this.cv.style.height = Math.round(H * T) + 'px';
+      this.cv.width = Math.round(W * this.S);
+      this.cv.height = Math.round(H * this.S);
+      this.mazeKey = '';
+    }
+
+    /* walls: marching squares on tile centres, inset so corridors read wider (arcade look) */
+    wallGeometry(maze) {
+      const L = 0.82, fills = [], segs = [];
+      const val = (x, y) => maze.type[PM.U.clamp(y, 0, H - 1) * W + PM.U.clamp(x, 0, W - 1)] === PM.TILE.WALL ? 1 : 0;
+      const lerp = (a, b, k) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+      for (let j = -1; j < H; j++) {
+        for (let i = -1; i < W; i++) {
+          const v = [val(i, j), val(i + 1, j), val(i + 1, j + 1), val(i, j + 1)];
+          const sum = v[0] + v[1] + v[2] + v[3];
+          if (!sum) continue;
+          const c = [[i + 0.5, j + 0.5], [i + 1.5, j + 0.5], [i + 1.5, j + 1.5], [i + 0.5, j + 1.5]];
+          const poly = [], edge = [];
+          for (let k = 0; k < 4; k++) {
+            const n = (k + 1) % 4;
+            if (v[k]) poly.push(c[k]);
+            if (v[k] !== v[n]) { const p = v[k] ? lerp(c[n], c[k], L) : lerp(c[k], c[n], L); poly.push(p); edge.push(p); }
+          }
+          fills.push(poly);
+          if (edge.length === 2) segs.push(edge);
+          else if (edge.length === 4) {
+            // saddle: keep the two wall corners connected
+            if (v[0]) { segs.push([edge[0], edge[1]]); segs.push([edge[2], edge[3]]); }
+            else { segs.push([edge[3], edge[0]]); segs.push([edge[1], edge[2]]); }
+          }
+        }
+      }
+      return { fills, segs };
+    }
+    buildMaze(game) {
+      const th = PM.THEMES[game.theme] || PM.THEMES.retro;
+      const key = game.maze.kind + game.maze.seed + game.theme + this.S;
+      if (key === this.mazeKey) return;
+      this.mazeKey = key;
+      const geo = this.wallGeometry(game.maze);
+      const make = (line, glowCol, fill) => {
+        const c = document.createElement('canvas');
+        c.width = this.cv.width; c.height = this.cv.height;
+        const g = c.getContext('2d');
+        g.scale(this.S, this.S);
+        g.fillStyle = fill; g.strokeStyle = fill; g.lineWidth = 0.04;
+        g.beginPath();
+        for (const p of geo.fills) { g.moveTo(p[0][0], p[0][1]); for (let k = 1; k < p.length; k++) g.lineTo(p[k][0], p[k][1]); g.closePath(); }
+        g.fill(); g.stroke();
+        g.lineCap = 'round'; g.lineJoin = 'round';
+        const path = new Path2D();
+        for (const s of geo.segs) { path.moveTo(s[0][0], s[0][1]); path.lineTo(s[1][0], s[1][1]); }
+        g.shadowColor = glowCol; g.shadowBlur = this.S * 0.55;
+        g.strokeStyle = line; g.lineWidth = 0.16; g.stroke(path);
+        g.shadowBlur = 0;
+        g.globalAlpha = 0.65; g.strokeStyle = '#ffffff'; g.lineWidth = 0.045; g.stroke(path);
+        g.globalAlpha = 1;
+        // ghost house door
+        g.fillStyle = th.door; g.fillRect(13, 12.4, 2, 0.2);
+        return c;
+      };
+      this.mazeImg = make(th.wall, th.glow, th.fill);
+      this.mazeFlash = make('#ffffff', '#ffffff', 'rgba(255,255,255,0.12)');
+    }
+
+    text(str, x, y, size, color, align) {
+      const ctx = this.ctx;
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.font = '800 ' + Math.round(size * this.S) + 'px ' + FONT;
+      ctx.textAlign = align || 'center'; ctx.textBaseline = 'middle';
+      ctx.lineWidth = Math.max(2, this.S * 0.18); ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.lineJoin = 'round';
+      ctx.strokeText(str, x * this.S + this.ox, y * this.S + this.oy);
+      ctx.fillStyle = color;
+      ctx.fillText(str, x * this.S + this.ox, y * this.S + this.oy);
+      ctx.restore();
+    }
+
+    // effects that follow game events
+    onEvent(e, game) {
+      const fx = this.fx, P = game.pacs[e.pac] || game.player;
+      const col = P ? Draw.pacColor(P.color, this.time) : '#ffe14d';
+      switch (e.type) {
+        case 'dot':
+          if (e.kind === 2) { fx.ring(e.x, e.y, '#ffffff', 2.5, 0.45); fx.burst(e.x, e.y, '#ffffff', 14, 6, 0.12, 0.5); }
+          else if (!this.reduced && Math.random() < (e.magnet ? 1 : 0.35)) fx.burst(e.x, e.y, (PM.THEMES[game.theme] || PM.THEMES.retro).dot, e.magnet ? 3 : 2, 2.5, 0.07, 0.3);
+          break;
+        case 'ghostEaten':
+          fx.burst(e.x, e.y, PM.GHOSTS[e.ghost].color, 26, 8, 0.16, 0.7);
+          fx.ring(e.x, e.y, '#4ef2ff', 3, 0.5);
+          if (game.battle || e.shatter) fx.text(e.x, e.y - 0.6, String(e.pts), '#4ef2ff', 0.9, 1);
+          this.shake = Math.max(this.shake, 0.18);
+          break;
+        case 'fruitEaten': fx.text(e.x, e.y, String(e.pts), '#ffb8ff', 0.85, 1.4); fx.burst(e.x, e.y, '#ff5ec8', 18, 5); break;
+        case 'coin': fx.text(e.x, e.y - 0.5, '+100', '#ffcf3a', 0.7, 0.8); fx.burst(e.x, e.y, '#ffcf3a', 10, 4); break;
+        case 'power': {
+          const c = PM.POWERUPS[e.what].color;
+          fx.ring(e.x, e.y, c, e.what === 'shock' ? 7 : 3, e.what === 'shock' ? 0.7 : 0.5);
+          fx.burst(e.x, e.y, c, 24, 7, 0.14, 0.6);
+          fx.text(e.x, e.y - 0.8, PM.POWERUPS[e.what].name.toUpperCase(), c, 0.7, 1.1);
+          if (e.what === 'shock') this.shake = Math.max(this.shake, 0.35);
+          break;
+        }
+        case 'shieldBlock': fx.ring(e.x, e.y, '#5dff9e', 3, 0.6); fx.burst(e.x, e.y, '#5dff9e', 20, 7); this.shake = Math.max(this.shake, 0.25); break;
+        case 'death':
+          this.shake = Math.max(this.shake, game.battle ? 0.25 : 0.4);
+          if (game.battle) { fx.burst(e.x, e.y, col, 30, 8, 0.16, 0.8); }
+          break;
+        case 'rivalEaten': fx.text(e.x, e.y - 0.6, String(e.pts), '#ffe14d', 0.9, 1.2); fx.ring(e.x, e.y, '#ffe14d', 3, 0.5); break;
+        case 'combo': fx.text(e.x, e.y - 1, 'COMBO x' + e.mult, '#ffd23a', 0.75, 1); break;
+        case 'respawn': fx.ring(e.x, e.y, col, 2.5, 0.5); break;
+        case 'levelClear': if (e.bonus) fx.text(14, 17.5, 'TIME BONUS ' + e.bonus, '#ffd23a', 0.8, 2.2); break;
+        case 'extraLife': fx.text(P.x, P.y - 1, '1UP', '#5dff9e', 0.9, 1.4); break;
+      }
+    }
+
+    trail(p, game, dt) {
+      if (!p.alive || !p.moving || p.trail === 'none' || this.reduced) return;
+      p._trailT = (p._trailT || 0) - dt;
+      if (p._trailT > 0) return;
+      p._trailT = 0.035;
+      const bx = p.x - PM.DX[p.dir] * 0.6, by = p.y - PM.DY[p.dir] * 0.6;
+      const j = () => (Math.random() - 0.5) * 0.5;
+      switch (p.trail) {
+        case 'sparkle': this.fx.spawn({ x: bx + j(), y: by + j(), color: Math.random() < 0.5 ? '#ffffff' : '#fff3a0', shape: 'star', size: 0.13, life: 0.45, max: 0.45 }); break;
+        case 'hearts': this.fx.spawn({ x: bx + j(), y: by + j(), vy: -0.8, color: '#ff5ec8', shape: 'heart', size: 0.12, life: 0.6, max: 0.6 }); break;
+        case 'fire': this.fx.spawn({ x: bx + j(), y: by + j(), vy: -1.6, color: Math.random() < 0.5 ? '#ff7a1a' : '#ffd23a', size: 0.2, life: 0.4, max: 0.4 }); break;
+        case 'pixels': this.fx.spawn({ x: bx + j(), y: by + j(), color: Draw.pacColor(p.color, this.time), shape: 'square', size: 0.09, life: 0.5, max: 0.5 }); break;
+        case 'rainbow': this.fx.spawn({ x: bx + j() * 0.4, y: by + j() * 0.4, color: rainbow(this.time * 2), size: 0.22, life: 0.5, max: 0.5 }); break;
+      }
+    }
+
+    draw(game, dt, opt) {
+      opt = opt || {};
+      this.time += dt;
+      const ctx = this.ctx, S = this.S, th = PM.THEMES[game.theme] || PM.THEMES.retro, t = this.time;
+      this.buildMaze(game);
+      this.fx.update(dt);
+      for (const p of game.pacs) this.trail(p, game, dt);
+      this.shake = Math.max(0, this.shake - dt);
+      const sh = this.reduced ? 0 : this.shake;
+      this.ox = sh ? (Math.random() - 0.5) * sh * S : 0;
+      this.oy = sh ? (Math.random() - 0.5) * sh * S : 0;
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      const bg = ctx.createLinearGradient(0, 0, 0, this.cv.height);
+      bg.addColorStop(0, th.bg[0]); bg.addColorStop(1, th.bg[1]);
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, this.cv.width, this.cv.height);
+      ctx.setTransform(S, 0, 0, S, this.ox, this.oy);
+      if (th.stars) {
+        for (const s of this.stars) { ctx.globalAlpha = 0.35 + 0.35 * Math.sin(t * 2 + s.p); ctx.fillStyle = '#ffffff'; ctx.fillRect(s.x, s.y, s.s, s.s); }
+        ctx.globalAlpha = 1;
+      }
+
+      const clearing = game.state === 'clear';
+      const flash = clearing && game.clearT < 1.8 && Math.floor(game.clearT * 4) % 2 === 0;
+      ctx.setTransform(1, 0, 0, 1, this.ox, this.oy);
+      ctx.drawImage(flash ? this.mazeFlash : this.mazeImg, 0, 0);
+      ctx.setTransform(S, 0, 0, S, this.ox, this.oy);
+
+      // dots: one path for all of them
+      ctx.fillStyle = th.dot;
+      ctx.beginPath();
+      const dots = game.dots;
+      for (let i = 0; i < W * H; i++) {
+        if (dots[i] !== 1) continue;
+        const x = i % W + 0.5, y = ((i / W) | 0) + 0.5;
+        ctx.moveTo(x + 0.12, y); ctx.arc(x, y, 0.12, 0, TAU);
+      }
+      ctx.fill();
+      const blink = game.state !== 'play' || Math.floor(t * 4.5) % 2 === 0;
+      for (let i = 0; i < W * H; i++) {
+        if (dots[i] !== 2) continue;
+        const x = i % W + 0.5, y = ((i / W) | 0) + 0.5;
+        if (blink) {
+          const gs = glow(th.dot, Math.round(S * 1.2));
+          ctx.drawImage(gs, x - 1.2, y - 1.2, 2.4, 2.4);
+          ctx.fillStyle = th.dot; ctx.beginPath(); ctx.arc(x, y, 0.36 + Math.sin(t * 6) * 0.03, 0, TAU); ctx.fill();
+        }
+      }
+
+      // items
+      const drawn = new Set();
+      for (const i of game.maze.paths) {
+        const it = game.items[i];
+        if (!it || drawn.has(it)) continue;
+        drawn.add(it);
+        const bobY = Math.sin(t * 3 + it.x) * 0.08;
+        if (it.kind === 'fruit') { ctx.drawImage(glow('#ff5ec8', Math.round(S)), it.x - 1, it.y - 1, 2, 2); Draw.fruit(ctx, it.type, it.x, it.y + bobY, 1.05); }
+        else if (it.kind === 'coin') Draw.fruit(ctx, 'coin', it.x, it.y + bobY, 0.8 + Math.sin(t * 5 + it.x) * 0.05);
+        else if (it.kind === 'power') {
+          if (it.t < 3 && Math.floor(t * 6) % 2) continue;
+          const c = PM.POWERUPS[it.type].color;
+          ctx.drawImage(glow(c, Math.round(S * 1.4)), it.x - 1.4, it.y - 1.4, 2.8, 2.8);
+          Draw.power(ctx, it.type, it.x, it.y + bobY, 1 + Math.sin(t * 4) * 0.05, t);
+        }
+      }
+
+      const dying = game.state === 'dying';
+      const hideGhosts = (dying && game.dieT < 1.9) || clearing || game.state === 'over';
+
+      // ghosts
+      if (!hideGhosts) {
+        for (const g of game.ghosts) {
+          if (g === game.hitGhost) continue;
+          let mode = 'normal';
+          if (g.state === 'eaten' || g.state === 'entering') mode = 'eyes';
+          else if (game.freezeT > 0 && (g.state === 'active' || g.state === 'leaving')) mode = 'frozen';
+          else if (g.fright > 0) mode = g.fright < game.flashDur && Math.floor(t * 6) % 2 ? 'flash' : 'fright';
+          this.drawWrapped(g.x, () => {
+            if (mode !== 'eyes') ctx.drawImage(glow(mode === 'normal' ? g.color : '#2b3cff', Math.round(S * 1.3)), g.x - 1.3, g.y - 1.3, 2.6, 2.6);
+            Draw.ghost(ctx, { x: g.x, y: g.y, color: g.color, dir: g.dir, t, mode });
+          });
+          if (this.showTargets && g.target && g.state === 'active' && mode === 'normal') {
+            ctx.strokeStyle = g.color; ctx.lineWidth = 0.08; ctx.globalAlpha = 0.8;
+            const [tx, ty] = g.target;
+            ctx.strokeRect(tx + 0.15, ty + 0.15, 0.7, 0.7);
+            ctx.setLineDash([0.2, 0.2]); ctx.beginPath(); ctx.moveTo(g.x, g.y); ctx.lineTo(tx + 0.5, ty + 0.5); ctx.stroke(); ctx.setLineDash([]);
+            ctx.globalAlpha = 1;
+          }
+        }
+      }
+      if (game.hitGhost && game.hitstop > 0) this.text(String(game.hitPts), game.hitGhost.x, game.hitGhost.y, 0.75, '#4ef2ff');
+
+      // pacs
+      for (const p of game.pacs) {
+        if (!p.alive && !(dying && p === game.player)) {
+          continue;
+        }
+        const pc = Draw.pacColor(p.color, t);
+        this.drawWrapped(p.x, () => {
+          if (!p.alive) {
+            const f = PM.U.clamp((p.deadT - 0.7) / 1.3, 0, 1);
+            if (f < 1) Draw.pac(ctx, { x: p.x, y: p.y, r: 0.8, color: p.color, death: f * 0.98 + 0.02, t });
+            else if (!p._popped) { p._popped = true; this.fx.burst(p.x, p.y, pc, 24, 5, 0.12, 0.6); }
+            return;
+          }
+          p._popped = false;
+          const blinkInv = p.invuln > 0 && Math.floor(t * 10) % 2;
+          ctx.drawImage(glow(pc === '#1b1b2e' ? '#7b5cff' : pc, Math.round(S * 1.3)), p.x - 1.3, p.y - 1.3, 2.6, 2.6);
+          if (p.power > 0) { ctx.strokeStyle = '#ffffff'; ctx.globalAlpha = 0.5 + 0.4 * Math.sin(t * 12); ctx.lineWidth = 0.08; ctx.beginPath(); ctx.arc(p.x, p.y, 1.05, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; }
+          if (p.magnet > 0) { ctx.strokeStyle = '#ff5a7a'; ctx.globalAlpha = 0.25; ctx.lineWidth = 0.06; ctx.beginPath(); ctx.arc(p.x, p.y, 2.4 + Math.sin(t * 8) * 0.1, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; }
+          if (p.turbo > 0 && p.moving) {
+            ctx.strokeStyle = '#ffd23a'; ctx.lineWidth = 0.06; ctx.globalAlpha = 0.7;
+            for (let k = -1; k <= 1; k++) {
+              const px = -PM.DX[p.dir], py = -PM.DY[p.dir], ox = PM.DY[p.dir] * k * 0.35, oy = PM.DX[p.dir] * k * 0.35;
+              ctx.beginPath(); ctx.moveTo(p.x + px * 0.9 + ox, p.y + py * 0.9 + oy); ctx.lineTo(p.x + px * (1.5 + Math.random() * 0.4) + ox, p.y + py * (1.5 + Math.random() * 0.4) + oy); ctx.stroke();
+            }
+            ctx.globalAlpha = 1;
+          }
+          const ready = game.state === 'ready';
+          Draw.pac(ctx, {
+            x: p.x, y: p.y, r: 0.8, dir: p.dir, color: p.color, hat: p.hat, t,
+            mouth: ready ? 0.15 : p.moving ? Math.abs(Math.sin(p.mouth * 2.4)) : 0.35,
+            alpha: p.phase > 0 ? 0.45 : blinkInv ? 0.35 : 1
+          });
+          if (p.shield > 0) {
+            ctx.strokeStyle = '#5dff9e'; ctx.lineWidth = 0.08; ctx.globalAlpha = p.shield < 3 && Math.floor(t * 8) % 2 ? 0.25 : 0.75;
+            ctx.beginPath(); ctx.arc(p.x, p.y, 1.0, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1;
+          }
+        });
+        if (game.battle && p.alive) this.text(p.isPlayer ? 'YOU' : p.name, p.x, p.y - 1.45, 0.42, p.isPlayer ? '#ffffff' : pc);
+        if (p.emote && p.alive) this.text(p.emote, p.x + 0.9, p.y - 1.1, 0.7, '#ffffff');
+      }
+
+      this.fx.draw(ctx);
+
+      // blackout event: only a small light around each pac (ghost eyes still glow)
+      if (game.event === 'blackout' && !clearing && game.state !== 'over') this.drawDarkness(game);
+
+      // arcade messages
+      if (game.state === 'ready') {
+        if (game.level === 1 && game.readyT > 2.2 && !game.battle) this.text('PLAYER ONE', 14, 11.5, 0.85, '#4ef2ff');
+        this.text(game.battle ? 'GET READY!' : 'READY!', 14, 17.5, 0.9, th.accent);
+      }
+      if (game.state === 'over' && !game.battle) this.text('GAME  OVER', 14, 17.5, 0.9, '#ff3b5c');
+      if (opt.paused) this.text('PAUSED', 14, 17.5, 1, '#ffffff');
+    }
+
+    drawWrapped(x, fn) {
+      fn();
+      if (x < 1.5) { this.ctx.save(); this.ctx.translate(W, 0); fn(); this.ctx.restore(); }
+      else if (x > W - 1.5) { this.ctx.save(); this.ctx.translate(-W, 0); fn(); this.ctx.restore(); }
+    }
+
+    drawDarkness(game) {
+      const ctx = this.ctx, S = this.S;
+      if (!this.dark || this.dark.width !== this.cv.width || this.dark.height !== this.cv.height) {
+        this.dark = document.createElement('canvas');
+        this.dark.width = this.cv.width; this.dark.height = this.cv.height;
+      }
+      const d = this.dark.getContext('2d');
+      d.globalCompositeOperation = 'source-over';
+      d.clearRect(0, 0, this.dark.width, this.dark.height);
+      d.fillStyle = 'rgba(2,2,8,0.95)';
+      d.fillRect(0, 0, this.dark.width, this.dark.height);
+      d.globalCompositeOperation = 'destination-out';
+      for (const p of game.pacs) {
+        if (!p.alive) continue;
+        const r = 4.6 * S, x = p.x * S, y = p.y * S;
+        const g = d.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(0.6, 'rgba(0,0,0,0.85)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+        d.fillStyle = g; d.beginPath(); d.arc(x, y, r, 0, TAU); d.fill();
+      }
+      ctx.setTransform(1, 0, 0, 1, this.ox, this.oy);
+      ctx.drawImage(this.dark, 0, 0);
+      ctx.setTransform(S, 0, 0, S, this.ox, this.oy);
+      for (const g of game.ghosts) {
+        if (g.state === 'house') continue;
+        for (const s of [-1, 1]) {
+          ctx.fillStyle = g.fright > 0 ? '#ffd8b8' : '#ffffff';
+          ctx.beginPath(); ctx.arc(g.x + s * 0.3, g.y - 0.27, 0.13, 0, TAU); ctx.fill();
+        }
+      }
+    }
+
+    // small images for the DOM HUD
+    icon(kind, type, px) {
+      this.icons = this.icons || new Map();
+      const key = kind + type + px;
+      if (this.icons.has(key)) return this.icons.get(key);
+      const c = document.createElement('canvas');
+      c.width = c.height = px;
+      const g = c.getContext('2d');
+      g.scale(px / 2, px / 2);
+      if (kind === 'fruit') Draw.fruit(g, type, 1, 1, 1.2);
+      else if (kind === 'power') Draw.power(g, type, 1, 1, 1.5, 0);
+      else if (kind === 'pac') Draw.pac(g, { x: 1, y: 1, r: 0.85, dir: 1, color: type, mouth: 0.6 });
+      const url = c.toDataURL();
+      this.icons.set(key, url);
+      return url;
+    }
+  }
+  PM.Renderer = Renderer;
+})(window.PM = window.PM || {});
+
+/* PAC-MAN 2027* — every sound is synthesized (no audio files, no requests).
+   Kept soft on purpose: triangle/sine voices through a gentle low-pass. */
+(function (PM) {
+  'use strict';
+  const A = {
+    ctx: null, on: true, musicOn: true, volume: 0.7,
+    init() {
+      if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      const c = this.ctx = new AC();
+      this.master = c.createGain(); this.master.gain.value = this.volume;
+      const comp = c.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 4;
+      this.master.connect(comp); comp.connect(c.destination);
+      this.lp = c.createBiquadFilter(); this.lp.type = 'lowpass'; this.lp.frequency.value = 5200; this.lp.connect(this.master);
+      this.sfxBus = c.createGain(); this.sfxBus.connect(this.lp);
+      this.musicBus = c.createGain(); this.musicBus.gain.value = 0.5; this.musicBus.connect(this.lp);
+      this.ambBus = c.createGain(); this.ambBus.gain.value = 0; this.ambBus.connect(this.lp);
+      const len = c.sampleRate;
+      this.noise = c.createBuffer(1, len, c.sampleRate);
+      const d = this.noise.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      this.startAmbient();
+      if (this.wantMusic) this.startMusic();
+    },
+    setVolume(v) { this.volume = v; if (this.master) this.master.gain.value = v; },
+    now() { return this.ctx.currentTime; },
+
+    tone(f, dur, o) {
+      if (!this.ctx || !this.on) return;
+      o = o || {};
+      const c = this.ctx, t = c.currentTime + (o.delay || 0);
+      const osc = c.createOscillator(), g = c.createGain();
+      osc.type = o.type || 'triangle';
+      osc.frequency.setValueAtTime(f, t);
+      if (o.to) osc.frequency.exponentialRampToValueAtTime(o.to, t + (o.slide || dur));
+      if (o.detune) osc.detune.value = o.detune;
+      const v = (o.vol || 0.12);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(v, t + (o.attack || 0.008));
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      osc.connect(g); g.connect(o.bus || this.sfxBus);
+      osc.start(t); osc.stop(t + dur + 0.05);
+    },
+    hiss(dur, o) {
+      if (!this.ctx || !this.on) return;
+      o = o || {};
+      const c = this.ctx, t = c.currentTime + (o.delay || 0);
+      const src = c.createBufferSource(); src.buffer = this.noise;
+      const f = c.createBiquadFilter(); f.type = o.filter || 'bandpass'; f.Q.value = o.q || 1.2;
+      f.frequency.setValueAtTime(o.from || 1200, t);
+      if (o.to) f.frequency.exponentialRampToValueAtTime(o.to, t + dur);
+      const g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(o.vol || 0.08, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.connect(f); f.connect(g); g.connect(this.sfxBus);
+      src.start(t); src.stop(t + dur + 0.05);
+    },
+
+    /* ---------- effects ---------- */
+    wakaFlip: false, lastWaka: 0,
+    sfx(name, arg) {
+      if (!this.ctx || !this.on) return;
+      const now = this.ctx.currentTime;
+      switch (name) {
+        case 'waka':
+          if (now - this.lastWaka < 0.06) return;
+          this.lastWaka = now;
+          this.wakaFlip = !this.wakaFlip;
+          this.tone(this.wakaFlip ? 420 : 300, 0.09, { to: this.wakaFlip ? 280 : 430, vol: 0.07 });
+          break;
+        case 'energizer': this.tone(220, 0.25, { to: 660, vol: 0.1 }); this.tone(330, 0.3, { to: 990, vol: 0.05, delay: 0.04, type: 'sine' }); break;
+        case 'ghost': this.tone(240, 0.38, { to: 1150, vol: 0.12 }); this.tone(480, 0.3, { to: 1600, vol: 0.04, type: 'sine', delay: 0.05 }); break;
+        case 'fruit': [784, 988, 1319].forEach((f, i) => this.tone(f, 0.12, { vol: 0.09, delay: i * 0.06, type: 'sine' })); break;
+        case 'coin': this.tone(1319, 0.08, { vol: 0.07, type: 'sine' }); this.tone(1760, 0.16, { vol: 0.07, type: 'sine', delay: 0.06 }); break;
+        case 'combo': this.tone(660 + (arg || 1) * 110, 0.14, { vol: 0.08, type: 'sine' }); this.tone(990 + (arg || 1) * 165, 0.18, { vol: 0.05, type: 'sine', delay: 0.05 }); break;
+        case 'death':
+          this.tone(760, 1.25, { to: 140, vol: 0.12, slide: 1.2 });
+          this.tone(380, 1.25, { to: 70, vol: 0.05, slide: 1.2, type: 'sine', detune: 8 });
+          this.tone(330, 0.09, { vol: 0.1, delay: 1.35 }); this.tone(330, 0.09, { vol: 0.1, delay: 1.5 });
+          break;
+        case 'hurt': this.tone(500, 0.35, { to: 150, vol: 0.1 }); break;
+        case 'extraLife': [1047, 1319, 1568, 2093].forEach((f, i) => this.tone(f, 0.25, { vol: 0.07, delay: i * 0.08, type: 'sine' })); break;
+        case 'clear': [523, 659, 784, 1047, 1319].forEach((f, i) => this.tone(f, 0.22, { vol: 0.09, delay: i * 0.07 })); break;
+        case 'shield': this.tone(1200, 0.4, { to: 900, vol: 0.08, type: 'sine' }); this.tone(1800, 0.3, { vol: 0.04, type: 'sine', delay: 0.02 }); break;
+        case 'rival': this.tone(300, 0.3, { to: 900, vol: 0.1 }); this.tone(900, 0.25, { to: 1400, vol: 0.06, delay: 0.12, type: 'sine' }); break;
+        case 'spawn': this.tone(880, 0.08, { vol: 0.04, type: 'sine' }); this.tone(1320, 0.12, { vol: 0.04, type: 'sine', delay: 0.07 }); break;
+        case 'click': this.tone(900, 0.04, { vol: 0.04, type: 'sine' }); break;
+        case 'event': [392, 523, 659].forEach((f, i) => this.tone(f, 0.3, { vol: 0.07, delay: i * 0.1 })); break;
+        case 'power':
+          switch (arg) {
+            case 'turbo': this.hiss(0.45, { from: 400, to: 3000, vol: 0.09 }); this.tone(300, 0.3, { to: 900, vol: 0.06 }); break;
+            case 'magnet': this.tone(200, 0.5, { to: 420, vol: 0.09, type: 'sine' }); this.tone(203, 0.5, { to: 425, vol: 0.06, type: 'sine', detune: 15 }); break;
+            case 'freeze': [1760, 2093, 2637, 3136].forEach((f, i) => this.tone(f, 0.25, { vol: 0.04, delay: i * 0.05, type: 'sine' })); break;
+            case 'shield': this.sfx('shield'); break;
+            case 'shock': this.tone(110, 0.6, { to: 45, vol: 0.18, type: 'sine' }); this.hiss(0.5, { from: 800, to: 120, vol: 0.12, filter: 'lowpass' }); break;
+            case 'phase': this.tone(600, 0.6, { to: 300, vol: 0.06, type: 'sine' }); this.tone(900, 0.6, { to: 450, vol: 0.04, type: 'sine', delay: 0.05 }); break;
+            case 'double': this.tone(988, 0.1, { vol: 0.08 }); this.tone(1319, 0.2, { vol: 0.08, delay: 0.09 }); break;
+          }
+          break;
+      }
+    },
+
+    // original start-up jingle (two voices, ~3.9 s)
+    jingle() {
+      if (!this.ctx || !this.on) return;
+      const N = { G2: 98, C3: 131, D3: 147, E3: 165, F2: 87, A2: 110, G3: 196, B4: 494, C5: 523, D5: 587, E5: 659, F5: 698, G5: 784, A4: 440, A5: 880, B5: 988, C6: 1047 };
+      const e = 0.18;
+      const lead = ['C5', 'E5', 'G5', 'C6', 'B4', 'D5', 'G5', 'B5', 'A4', 'C5', 'E5', 'A5', 'G5', 'F5', 'E5', 'D5', 'C5', null, 'G5', null, 'C6'];
+      const bass = ['C3', null, 'G2', null, 'G2', null, 'D3', null, 'A2', null, 'E3', null, 'F2', null, 'G2', null, 'C3', null, 'G2', null, 'C3'];
+      lead.forEach((n, i) => { if (n) this.tone(N[n], i === lead.length - 1 ? 0.6 : e * 0.95, { delay: i * e, vol: 0.08 }); });
+      bass.forEach((n, i) => { if (n) this.tone(N[n], e * 1.8, { delay: i * e, vol: 0.09, type: 'sine' }); });
+    },
+
+    /* ---------- background loop (siren / frightened / eyes) ---------- */
+    startAmbient() {
+      const c = this.ctx;
+      this.amb = c.createOscillator(); this.amb.type = 'triangle'; this.amb.frequency.value = 300;
+      this.lfo = c.createOscillator(); this.lfo.frequency.value = 3;
+      this.lfoGain = c.createGain(); this.lfoGain.gain.value = 40;
+      this.lfo.connect(this.lfoGain); this.lfoGain.connect(this.amb.frequency);
+      const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1400;
+      this.amb.connect(f); f.connect(this.ambBus);
+      this.amb.start(); this.lfo.start();
+      this.ambKind = null;
+    },
+    setAmbient(kind, progress) {
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      const target = !this.on || !kind ? 0 : kind === 'siren' ? 0.022 : kind === 'fright' ? 0.03 : 0.022;
+      this.ambBus.gain.setTargetAtTime(target, t, 0.08);
+      if (!kind) { this.ambKind = null; return; }
+      if (kind === 'siren') {
+        const base = 260 + (progress || 0) * 200;
+        this.amb.frequency.setTargetAtTime(base, t, 0.3);
+        this.lfo.frequency.setTargetAtTime(2.6 + (progress || 0) * 2.4, t, 0.3);
+        this.lfoGain.gain.setTargetAtTime(base * 0.16, t, 0.3);
+      } else if (kind === 'fright') {
+        this.amb.frequency.setTargetAtTime(190, t, 0.05);
+        this.lfo.frequency.setTargetAtTime(9, t, 0.05);
+        this.lfoGain.gain.setTargetAtTime(45, t, 0.05);
+      } else if (kind === 'eyes') {
+        this.amb.frequency.setTargetAtTime(820, t, 0.05);
+        this.lfo.frequency.setTargetAtTime(11, t, 0.05);
+        this.lfoGain.gain.setTargetAtTime(260, t, 0.05);
+      }
+      this.ambKind = kind;
+    },
+
+    /* ---------- menu music: a calm synthwave loop (original) ---------- */
+    startMusic() {
+      this.wantMusic = true;
+      if (!this.ctx || this.musicTimer || !this.musicOn) return;
+      const bpm = 104, step = 60 / bpm / 2;
+      const chords = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]]; // Am F C G
+      const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+      let i = 0, next = this.ctx.currentTime + 0.1;
+      const tick = () => {
+        if (!this.ctx) return;
+        while (next < this.ctx.currentTime + 0.25) {
+          const bar = Math.floor(i / 8) % 4, ch = chords[bar], s = i % 8;
+          const arp = ch[[0, 1, 2, 1, 0, 2, 1, 2][s]] + 12;
+          const d = Math.max(0, next - this.ctx.currentTime);
+          if (this.on && this.musicOn) {
+            this.tone(mtof(arp), step * 0.9, { delay: d, vol: 0.035, bus: this.musicBus, type: 'triangle' });
+            if (s === 0) this.tone(mtof(ch[0] - 12), step * 7.5, { delay: d, vol: 0.05, bus: this.musicBus, type: 'sine', attack: 0.05 });
+            if (s === 0 || s === 4) ch.forEach(n => this.tone(mtof(n), step * 3.6, { delay: d, vol: 0.012, bus: this.musicBus, type: 'sine', attack: 0.12 }));
+          }
+          next += step; i++;
+        }
+      };
+      this.musicTimer = setInterval(tick, 90);
+      tick();
+    },
+    stopMusic() {
+      this.wantMusic = false;
+      if (this.musicTimer) { clearInterval(this.musicTimer); this.musicTimer = null; }
+    }
+  };
+  PM.Audio = A;
+})(window.PM = window.PM || {});
+
+/* PAC-MAN 2027* — keyboard, swipe, on-screen D-pad and gamepad */
+(function (PM) {
+  'use strict';
+  const KEYS = { ArrowUp: 0, KeyW: 0, ArrowLeft: 1, KeyA: 1, ArrowDown: 2, KeyS: 2, ArrowRight: 3, KeyD: 3 };
+  const Input = {
+    onDir: null, onKey: null,
+    touch: false,
+    init(swipeEl) {
+      this.touch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+      addEventListener('keydown', e => {
+        const tag = e.target && e.target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+        if (e.code in KEYS) { e.preventDefault(); this.onDir && this.onDir(KEYS[e.code]); }
+        else if (this.onKey) this.onKey(e.code, e);
+      });
+      // swipe anywhere on the play area; turns register as soon as the finger moves
+      let sx = 0, sy = 0, active = false;
+      swipeEl.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse') return; active = true; sx = e.clientX; sy = e.clientY; }, { passive: true });
+      swipeEl.addEventListener('pointermove', e => {
+        if (!active) return;
+        const dx = e.clientX - sx, dy = e.clientY - sy;
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 16) return;
+        const d = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 1 : 3) : (dy < 0 ? 0 : 2);
+        this.onDir && this.onDir(d);
+        sx = e.clientX; sy = e.clientY;
+      }, { passive: true });
+      const end = () => { active = false; };
+      swipeEl.addEventListener('pointerup', end); swipeEl.addEventListener('pointercancel', end);
+    },
+    bindPad(el) {
+      el.querySelectorAll('[data-d]').forEach(b => {
+        const d = Number(b.dataset.d);
+        const press = e => { e.preventDefault(); b.classList.add('on'); this.onDir && this.onDir(d); };
+        b.addEventListener('pointerdown', press);
+        b.addEventListener('pointerenter', e => { if (e.buttons) press(e); });
+        const up = () => b.classList.remove('on');
+        b.addEventListener('pointerup', up); b.addEventListener('pointerleave', up); b.addEventListener('pointercancel', up);
+      });
+    },
+    padPrev: -1, startPrev: false,
+    pollGamepad() {
+      const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+      for (const p of pads) {
+        if (!p) continue;
+        let d = -1;
+        const b = i => p.buttons[i] && p.buttons[i].pressed;
+        if (b(12)) d = 0; else if (b(14)) d = 1; else if (b(13)) d = 2; else if (b(15)) d = 3;
+        else if (Math.abs(p.axes[0]) > 0.5 || Math.abs(p.axes[1]) > 0.5) d = Math.abs(p.axes[0]) > Math.abs(p.axes[1]) ? (p.axes[0] < 0 ? 1 : 3) : (p.axes[1] < 0 ? 0 : 2);
+        if (d >= 0 && d !== this.padPrev) this.onDir && this.onDir(d);
+        this.padPrev = d;
+        const start = b(9);
+        if (start && !this.startPrev && this.onKey) this.onKey('Escape', {});
+        this.startPrev = start;
+        return;
+      }
+    }
+  };
+  PM.Input = Input;
+})(window.PM = window.PM || {});
+
+/* PAC-MAN 2027* — app: menus, HUD, progression, shop, missions, results */
+(function (PM) {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const fmt = PM.U.fmt, esc = PM.U.esc;
+  const STEP = 1 / 60;
+
+  /* ================= saved profile (this browser only) ================= */
+  const KEY = 'pm2027.v1';
+  const DEFAULT = () => ({
+    name: 'PLAYER', xp: 0, coins: 0,
+    owned: { color: ['yellow'], hat: ['none'], trail: ['none'], theme: ['retro', 'neon'] },
+    equip: { color: 'yellow', hat: 'none', trail: 'none', theme: 'retro' },
+    mode: 'x27', difficulty: 'normal', bots: 3, botSkill: 'normal',
+    settings: { sound: true, music: true, volume: 0.7, controls: 'auto', targets: false, motion: true },
+    stats: { games: 0, dots: 0, ghosts: 0, fruits: 0, levels: 0, deaths: 0, powerups: 0, battles: 0, battleWins: 0, bestLevel: 0, bestCombo: 0, perfectLevels: 0, time: 0 },
+    scores: { classic: [], x27: [], battle: [], daily: [] },
+    ach: {},
+    missions: { date: '', list: [], seen: '' },
+    daily: { last: '', streak: 0, history: {} }
+  });
+  function merge(base, extra) {
+    for (const k in extra) {
+      const v = extra[k];
+      if (v && typeof v === 'object' && !Array.isArray(v) && base[k] && typeof base[k] === 'object' && !Array.isArray(base[k])) merge(base[k], v);
+      else if (v !== undefined) base[k] = v;
+    }
+    return base;
+  }
+  PM.Store = {
+    load() { try { const raw = localStorage.getItem(KEY); if (raw) return merge(DEFAULT(), JSON.parse(raw)); } catch (e) { /* private mode */ } return DEFAULT(); },
+    save(p) { try { localStorage.setItem(KEY, JSON.stringify(p)); } catch (e) { /* ignore */ } },
+    reset() { try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ } return DEFAULT(); }
+  };
+
+  PM.levelOf = xp => Math.floor(Math.sqrt(xp / 300)) + 1;
+  PM.xpFor = lvl => (lvl - 1) * (lvl - 1) * 300;
+  const TITLES = ['Rookie', 'Dot Muncher', 'Maze Runner', 'Ghost Dodger', 'Power Player', 'Arcade Ace', 'Neon Legend', 'Ghost Hunter', 'Grand Master', 'PAC Legend'];
+  PM.titleOf = lvl => TITLES[Math.min(TITLES.length - 1, Math.floor((lvl - 1) / 3))];
+
+  const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return PM.dateKey(d); };
+
+  /* ================= app ================= */
+  const App = {
+    state: 'menu', paused: false, game: null, demo: null, last: 0, acc: 0, hud: {}, ambKey: '',
+
+    boot() {
+      this.p = PM.Store.load();
+      this.ensureMissions();
+      this.r = new PM.Renderer($('cv'));
+      PM.Input.init($('stage'));
+      PM.Input.onDir = d => this.onDir(d);
+      PM.Input.onKey = (code, e) => this.onKey(code, e);
+      PM.Input.bindPad($('dpad'));
+      this.applySettings();
+      const unlock = () => { PM.Audio.init(); if (this.state === 'menu') PM.Audio.startMusic(); };
+      addEventListener('pointerdown', unlock); addEventListener('keydown', unlock);
+      this.bind();
+      this.renderMenu();
+      this.renderProfile();
+      this.newDemo();
+      addEventListener('resize', () => this.layout());
+      this.layout();
+      document.addEventListener('visibilitychange', () => { if (document.hidden && this.state === 'game' && !this.paused && !this.ended) this.pause(); });
+      requestAnimationFrame(t => this.loop(t));
+    },
+    save() { PM.Store.save(this.p); },
+
+    applySettings() {
+      const s = this.p.settings;
+      PM.Audio.on = s.sound; PM.Audio.musicOn = s.music; PM.Audio.setVolume(s.volume);
+      if (!s.music) PM.Audio.stopMusic(); else if (this.state === 'menu') PM.Audio.startMusic();
+      this.r.showTargets = s.targets;
+      this.r.reduced = !s.motion;
+      this.layout();
+    },
+
+    bind() {
+      $('modes').addEventListener('click', e => {
+        const b = e.target.closest('.mode'); if (!b) return;
+        PM.Audio.sfx('click');
+        if (this.p.mode === b.dataset.mode) { this.start(); return; }
+        this.p.mode = b.dataset.mode; this.save(); this.renderMenu();
+      });
+      $('opts').addEventListener('click', e => {
+        const b = e.target.closest('button[data-k]'); if (!b || b.disabled) return;
+        PM.Audio.sfx('click');
+        const v = b.dataset.v;
+        if (b.dataset.k === 'theme') this.p.equip.theme = v; else this.p[b.dataset.k] = isNaN(v) ? v : Number(v);
+        this.save(); this.renderMenu();
+      });
+      $('play').addEventListener('click', () => this.start());
+      $('pause-btn').addEventListener('click', () => this.pause());
+      $('resume').addEventListener('click', () => this.resume());
+      $('restart').addEventListener('click', () => { $('pause').classList.add('hidden'); this.start(this.game.mode); });
+      $('quit').addEventListener('click', () => this.toMenu());
+      $('profile').addEventListener('click', () => this.open('profile'));
+      $('fs-btn').addEventListener('click', () => this.fullscreen());
+      document.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => this.open(b.dataset.open)));
+      $('modal').addEventListener('click', e => { if (e.target === $('modal') || e.target.closest('.close')) this.closeModal(); });
+      if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) $('fs-btn').classList.add('hidden');
+      if (PM.Input.touch) $('key-hint').textContent = 'Swipe anywhere to steer';
+    },
+
+    onDir(d) {
+      if (this.state === 'game' && !this.paused && this.game) this.game.setDir(this.game.player, d);
+    },
+    onKey(code, e) {
+      if (code === 'Escape' || code === 'KeyP') {
+        if (!$('modal').classList.contains('hidden')) { this.closeModal(); return; }
+        if (this.state === 'game' && !this.ended) { if (this.paused) this.resume(); else this.pause(); }
+      } else if ((code === 'Enter' || code === 'Space') && this.state === 'menu' && $('modal').classList.contains('hidden')) {
+        if (e.preventDefault) e.preventDefault();
+        this.start();
+      } else if (code === 'KeyM') {
+        this.p.settings.sound = !this.p.settings.sound; this.save(); this.applySettings();
+        this.toast(this.p.settings.sound ? '🔊 Sound on' : '🔇 Sound off');
+      }
+    },
+
+    layout() {
+      if (!this.r) return;
+      const s = this.p.settings, touch = PM.Input.touch, portrait = innerHeight > innerWidth;
+      const inGame = this.state === 'game';
+      const roomBelow = innerHeight - (innerWidth * 31 / 28) - 100;
+      const pad = inGame && touch && (s.controls === 'dpad' || (s.controls === 'auto' && portrait && roomBelow > 170));
+      $('dpad').classList.toggle('hidden', !pad);
+      $('dpad').classList.toggle('side', pad && !portrait);
+      const bw = $('board-wrap');
+      if (inGame) {
+        // size the board from the space the HUD and D-pad leave, then hug it so nothing floats
+        const st = $('stage'), cs = getComputedStyle(st);
+        let h = st.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - $('hud-top').offsetHeight - $('hud-bot').offsetHeight;
+        if (pad && portrait) h -= 174;
+        bw.style.flex = 'none';
+        this.r.resize(bw.clientWidth, Math.max(120, h - 4));
+        bw.style.height = this.r.cv.style.height;
+      } else {
+        bw.style.flex = ''; bw.style.height = '';
+        this.r.resize(bw.clientWidth, bw.clientHeight);
+      }
+      document.documentElement.style.setProperty('--board-w', Math.max(280, parseFloat(this.r.cv.style.width)) + 'px');
+    },
+    fullscreen() {
+      const d = document, el = d.documentElement;
+      try {
+        if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+        else (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+      } catch (e) { /* blocked by the embedding page */ }
+    },
+
+    /* ---------------- menu ---------------- */
+    renderMenu() {
+      const p = this.p, today = PM.dateKey(), done = p.daily.history[today];
+      $('modes').innerHTML = PM.MODE_ORDER.map(id => {
+        const m = PM.MODES[id];
+        const badge = id === 'daily' ? `<span class="badge">${done ? '✓ ' + fmt(done.score) : 'NEW TODAY'}</span>` : '';
+        return `<button class="mode${p.mode === id ? ' sel' : ''}" data-mode="${id}"><span class="ic">${m.icon}</span><b>${m.name.toUpperCase()}</b><small>${m.tag}</small>${badge}</button>`;
+      }).join('');
+      $('mode-desc').textContent = PM.MODES[p.mode].desc;
+      const seg = (k, list, cur) => `<span class="seg">${list.map(([v, label, dis]) => `<button data-k="${k}" data-v="${v}" class="${String(cur) === String(v) ? 'sel' : ''}"${dis ? ' disabled' : ''}>${label}</button>`).join('')}</span>`;
+      let html = '';
+      if (p.mode === 'classic') {
+        html = `<span class="opt">MAZE ${seg('theme', PM.CATALOG.theme.filter(t => p.owned.theme.includes(t.id)).map(t => [t.id, t.name]), p.equip.theme)}</span>`;
+      } else if (p.mode === 'x27') {
+        html = `<span class="opt">DIFFICULTY ${seg('difficulty', Object.keys(PM.DIFFICULTY).map(k => [k, PM.DIFFICULTY[k].name]), p.difficulty)}</span>`;
+      } else if (p.mode === 'battle') {
+        html = `<span class="opt">RIVALS ${seg('bots', [[1, '1'], [2, '2'], [3, '3']], p.bots)}</span>` +
+          `<span class="opt">AI ${seg('botSkill', Object.keys(PM.BOT_SKILL).map(k => [k, PM.BOT_SKILL[k].name]), p.botSkill)}</span>`;
+      } else {
+        html = `<span class="opt">${today} · ${done ? 'Played: ' + fmt(done.score) + ' · replays are practice' : 'One counted run today'} · Streak ${p.daily.streak} 🔥</span>`;
+      }
+      $('opts').innerHTML = html;
+      $('mission-dot').classList.toggle('hidden', p.missions.seen === today);
+    },
+    renderProfile() {
+      const p = this.p, lvl = PM.levelOf(p.xp), a = PM.xpFor(lvl), b = PM.xpFor(lvl + 1);
+      $('p-name').textContent = p.name || 'PLAYER';
+      $('p-level').textContent = 'Lv ' + lvl + ' · ' + PM.titleOf(lvl);
+      $('p-xp').style.width = Math.round((p.xp - a) / (b - a) * 100) + '%';
+      $('coins').textContent = '🪙 ' + fmt(p.coins);
+      this.drawPacPreview($('avatar'), 64, this.equipColor(), p.equip.hat);
+    },
+    equipColor(id) { const c = PM.CATALOG.color.find(x => x.id === (id || this.p.equip.color)); return c ? c.value : '#ffe14d'; },
+    drawPacPreview(cv, px, color, hat, trail, theme) {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      cv.width = px * dpr; cv.height = px * dpr;
+      const g = cv.getContext('2d');
+      g.setTransform(px * dpr / 4, 0, 0, px * dpr / 4, 0, 0);
+      g.clearRect(0, 0, 4, 4);
+      if (theme) {
+        const th = PM.THEMES[theme];
+        const bg = g.createLinearGradient(0, 0, 0, 4); bg.addColorStop(0, th.bg[0]); bg.addColorStop(1, th.bg[1]);
+        g.fillStyle = bg; g.fillRect(0, 0, 4, 4);
+        g.strokeStyle = th.wall; g.lineWidth = 0.12; g.shadowColor = th.glow; g.shadowBlur = px * dpr * 0.06;
+        g.strokeRect(0.35, 0.35, 3.3, 3.3); g.strokeRect(1.3, 1.3, 1.4, 1.4);
+        g.shadowBlur = 0; g.fillStyle = th.dot;
+        for (let i = 0; i < 4; i++) { g.beginPath(); g.arc(0.85 + i * 0.77, 0.85, 0.09, 0, Math.PI * 2); g.fill(); }
+        g.beginPath(); g.arc(0.85, 3.15, 0.2, 0, Math.PI * 2); g.fill();
+        return;
+      }
+      if (trail && trail !== 'none') {
+        const cols = { sparkle: ['#ffffff', '#fff3a0'], hearts: ['#ff5ec8'], fire: ['#ff7a1a', '#ffd23a'], pixels: [PM.Draw.pacColor(color, 0)], rainbow: ['#ff3b5c', '#ffd23a', '#5dff9e', '#4ef2ff', '#b58cff'] }[trail];
+        for (let i = 0; i < 7; i++) { g.fillStyle = cols[i % cols.length]; g.globalAlpha = 0.25 + i * 0.1; g.beginPath(); g.arc(0.25 + i * 0.22, 2.2 + Math.sin(i) * 0.15, 0.07 + i * 0.015, 0, Math.PI * 2); g.fill(); }
+        g.globalAlpha = 1;
+      }
+      PM.Draw.pac(g, { x: 2.2, y: 2.25, r: 1.15, dir: 3, color, hat, mouth: 0.55, t: performance.now() / 1000 });
+    },
+
+    /* ---------------- demo behind the menu ---------------- */
+    newDemo() {
+      const hats = ['none', 'cap', 'crown', 'antenna'];
+      this.demo = new PM.Game({ mode: 'x27', demo: true, autopilot: true, name: 'DEMO', color: '#ffe14d', hat: hats[Math.floor(Math.random() * hats.length)] });
+    },
+
+    /* ---------------- game flow ---------------- */
+    start(mode) {
+      mode = mode || this.p.mode;
+      PM.Audio.init();
+      const p = this.p, eq = p.equip, today = PM.dateKey();
+      const opts = { mode, name: (p.name || 'YOU').slice(0, 10), color: this.equipColor(), hat: eq.hat, trail: eq.trail, theme: eq.theme, difficulty: p.difficulty, bots: p.bots, botSkill: p.botSkill };
+      this.practice = false;
+      if (mode === 'daily') { opts.seed = PM.hash('pm2027-daily-' + today); this.practice = !!p.daily.history[today]; }
+      this.game = new PM.Game(opts);
+      this.state = 'game'; this.paused = false; this.ended = false;
+      this.levelsCleared = 0; this.perfectLevels = 0; this.insaneClear = false; this.shock3 = false;
+      this.hud = {}; this.ambKey = '';
+      this.r.fx.clear();
+      $('menu').classList.add('hidden'); $('pause').classList.add('hidden'); this.closeModal(true);
+      $('hud-top').classList.remove('hidden'); $('hud-bot').classList.remove('hidden');
+      $('h-lives').classList.toggle('hidden', mode === 'battle');
+      PM.Audio.stopMusic();
+      this.layout();
+      this.handleAll(this.game.drain());
+    },
+    toMenu() {
+      this.state = 'menu'; this.paused = false; this.game = null;
+      PM.Audio.setAmbient(null);
+      $('pause').classList.add('hidden'); $('banner').classList.add('hidden');
+      $('hud-top').classList.add('hidden'); $('hud-bot').classList.add('hidden');
+      $('menu').classList.remove('hidden');
+      this.closeModal(true);
+      this.renderMenu(); this.renderProfile();
+      this.layout();
+      PM.Audio.startMusic();
+    },
+    pause() {
+      if (this.state !== 'game' || this.ended) return;
+      this.paused = true;
+      PM.Audio.setAmbient(null);
+      $('pause').classList.remove('hidden');
+      setTimeout(() => $('resume').focus(), 30);
+    },
+    resume() {
+      this.paused = false; this.acc = 0;
+      $('pause').classList.add('hidden');
+      this.closeModal(true);
+    },
+
+    loop(ts) {
+      const dt = Math.min(0.05, (ts - this.last) / 1000 || STEP);
+      this.last = ts;
+      PM.Input.pollGamepad();
+      const inGame = this.state === 'game';
+      const g = inGame ? this.game : this.demo;
+      if (g && !(inGame && this.paused)) {
+        this.acc += dt;
+        let n = 0;
+        while (this.acc >= STEP && n < 5) { g.step(STEP); this.acc -= STEP; n++; }
+        if (n === 5) this.acc = 0;
+        const evs = g.drain();
+        if (inGame) this.handleAll(evs);
+        else {
+          for (const e of evs) this.r.onEvent(e, g);
+          if (g.state === 'over' || g.time > 150) this.newDemo();
+        }
+      }
+      if (g) this.r.draw(g, inGame && this.paused ? 0 : dt, { paused: inGame && this.paused });
+      if (inGame) { this.updateHud(); this.updateAmbient(); }
+      requestAnimationFrame(t => this.loop(t));
+    },
+
+    handleAll(evs) { for (const e of evs) this.handle(e); },
+    handle(e) {
+      const g = this.game, A = PM.Audio;
+      this.r.onEvent(e, g);
+      switch (e.type) {
+        case 'levelStart':
+          if (g.battle) { A.sfx('event'); this.banner('BATTLE!', 'Most points in 2:30 wins. Energizers let you eat rivals.', 2.6); break; }
+          if (e.first) A.jingle();
+          if (g.mode === 'classic') { if (e.level > 1) this.banner('LEVEL ' + e.level, '', 1.6); break; }
+          if (e.event !== 'none') { A.sfx('event'); this.banner('LEVEL ' + e.level + ' · ' + PM.EVENTS[e.event].name, PM.EVENTS[e.event].desc, 2.6); }
+          else this.banner('LEVEL ' + e.level, PM.THEMES[e.theme].name + (g.mode === 'daily' ? ' · Daily Run' : ''), 1.8);
+          break;
+        case 'dot': if (e.player) A.sfx('waka'); break;
+        case 'energizer': if (e.player) A.sfx('energizer'); break;
+        case 'ghostEaten': if (e.player) A.sfx('ghost'); break;
+        case 'fruitEaten': if (e.player) A.sfx('fruit'); break;
+        case 'power':
+          if (e.player) { A.sfx('power', e.what); if (e.what === 'shock' && e.hit >= 3) this.shock3 = true; }
+          break;
+        case 'powerSpawn': A.sfx('spawn'); break;
+        case 'coin': if (e.player) A.sfx('coin'); break;
+        case 'combo': if (e.player) A.sfx('combo', e.mult); break;
+        case 'death': if (e.player) { A.sfx(g.battle ? 'hurt' : 'death'); A.setAmbient(null); this.ambKey = ''; } break;
+        case 'rivalEaten': if (e.player || e.victim) A.sfx('rival'); break;
+        case 'shieldBlock': if (e.player) A.sfx('shield'); break;
+        case 'extraLife': A.sfx('extraLife'); this.toast('⭐ Extra life!', 'gold'); break;
+        case 'levelClear':
+          A.sfx('clear'); this.levelsCleared++;
+          if (e.perfect) this.perfectLevels++;
+          if (g.diffId === 'insane') this.insaneClear = true;
+          break;
+        case 'refill': this.banner('ROUND ' + e.round, 'The maze is full again!', 1.4); break;
+        case 'gameOver': setTimeout(() => this.finish(), 1700); break;
+        case 'battleEnd': setTimeout(() => this.finish(), 1200); break;
+      }
+    },
+
+    banner(title, sub, secs) {
+      $('banner-title').textContent = title;
+      $('banner-sub').textContent = sub || '';
+      $('banner-sub').classList.toggle('hidden', !sub);
+      const b = $('banner');
+      b.classList.remove('hidden');
+      b.style.animation = 'none'; void b.offsetWidth; b.style.animation = '';
+      clearTimeout(this.bannerT);
+      this.bannerT = setTimeout(() => b.classList.add('hidden'), (secs || 2) * 1000);
+    },
+    toast(msg, cls) {
+      const t = document.createElement('div');
+      t.className = 'toast' + (cls ? ' ' + cls : '');
+      t.textContent = msg;
+      $('toasts').appendChild(t);
+      setTimeout(() => t.remove(), 2600);
+    },
+
+    /* ---------------- HUD ---------------- */
+    set(id, v) { if (this.hud[id] !== v) { this.hud[id] = v; $(id).innerHTML = v; } },
+    bestFor(mode) {
+      const list = (this.p.scores[mode] || []).map(s => s.score).concat(PM.CPU_SCORES[mode].map(c => c[1]));
+      return Math.max(0, ...list);
+    },
+    updateHud() {
+      const g = this.game, me = g.player;
+      this.set('h-score', fmt(me.score));
+      if (g.battle) {
+        const t = Math.max(0, Math.ceil(g.battleT));
+        this.set('h-mid-label', 'TIME');
+        this.set('h-mid', Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'));
+        const rank = g.pacs.slice().sort((a, b) => b.score - a.score);
+        this.set('h-right-label', 'RANK');
+        this.set('h-right', '#' + (rank.indexOf(me) + 1) + '/' + g.pacs.length);
+        this.set('h-fruits', rank.map(p => `<span class="rchip${p.isPlayer ? ' me' : ''}"><i style="background:${PM.Draw.pacColor(p.color, 0)}"></i>${p.isPlayer ? 'YOU' : esc(p.name)} ${fmt(p.score)}</span>`).join(''));
+      } else {
+        this.set('h-mid-label', this.r.T * 28 < 380 ? 'BEST' : 'HIGH SCORE');
+        this.set('h-mid', fmt(Math.max(this.bestFor(g.mode), me.score)));
+        this.set('h-right-label', g.mode === 'daily' ? 'DAILY LV' : 'LEVEL');
+        this.set('h-right', String(g.level));
+        const icon = this.r.icon('pac', this.equipColor(), 44);
+        this.set('h-lives', Array.from({ length: Math.min(g.lives, 6) }, () => `<img src="${icon}" alt="">`).join(''));
+        const fr = [];
+        for (let l = Math.max(1, g.level - 6); l <= g.level; l++) fr.push(PM.fruitFor(l).id);
+        this.set('h-fruits', fr.map(f => `<img src="${this.r.icon('fruit', f, 48)}" alt="">`).join(''));
+      }
+      const pw = [];
+      const add = (type, t) => { if (t > 0) pw.push(`<span class="pchip"><img src="${this.r.icon('power', type, 44)}" alt="">${Math.ceil(t)}</span>`); };
+      add('turbo', me.turbo); add('magnet', me.magnet); add('shield', me.shield); add('phase', me.phase); add('double', me.dbl); add('freeze', g.freezeT);
+      if (g.battle && me.power > 0) pw.unshift(`<span class="pchip" style="color:#fff">⚡ POWER ${Math.ceil(me.power)}</span>`);
+      this.set('h-powers', pw.join(''));
+      const showCombo = g.features && me.combo >= 10;
+      if (this.hud.comboOn !== showCombo) { this.hud.comboOn = showCombo; $('h-combo').classList.toggle('hidden', !showCombo); }
+      if (showCombo) {
+        this.set('h-combo-x', 'x' + (1 + Math.min(3, Math.floor(me.combo / 20))) + ' <small style="font-size:10px;opacity:.7">' + me.combo + '</small>');
+        $('h-combo-bar').style.width = (me.combo >= 60 ? 100 : (me.combo % 20) * 5) + '%';
+      }
+    },
+    updateAmbient() {
+      const g = this.game;
+      let kind = null, prog = 0;
+      if (!this.paused && g.state === 'play') {
+        const eyes = g.ghosts.some(x => x.state === 'eaten' || x.state === 'entering');
+        const fr = g.ghosts.some(x => x.fright > 0 && x.state !== 'house');
+        kind = eyes ? 'eyes' : fr ? 'fright' : 'siren';
+        prog = 1 - g.dotsLeft / Math.max(1, g.dotsTotal);
+      }
+      const key = kind + Math.round(prog * 20);
+      if (key !== this.ambKey) { this.ambKey = key; PM.Audio.setAmbient(kind, prog); }
+    },
+
+    /* ---------------- results & rewards ---------------- */
+    ensureMissions() {
+      const today = PM.dateKey(), m = this.p.missions;
+      if (m.date === today && m.list.length) return;
+      const r = PM.rng(PM.hash('pm2027-missions-' + today));
+      const pick = PM.shuffle(PM.MISSIONS.slice(), r).slice(0, 3);
+      m.date = today;
+      m.list = pick.map(d => ({ id: d.id, n: d.n[r.int(d.n.length)], reward: d.reward, progress: 0, done: false }));
+      this.save();
+    },
+    missionText(m) { const d = PM.MISSIONS.find(x => x.id === m.id); return d.text.replace('{n}', fmt(m.n)); },
+
+    finish() {
+      if (this.ended || !this.game) return;
+      this.ended = true;
+      PM.Audio.setAmbient(null);
+      const g = this.game, me = g.player, p = this.p, st = p.stats, s = me.stats, today = PM.dateKey();
+      const score = me.score;
+      const rank = g.pacs.slice().sort((a, b) => b.score - a.score);
+      const place = rank.indexOf(me) + 1, win = g.battle && place === 1;
+      // lifetime stats
+      st.games++; st.dots += s.dots; st.ghosts += s.ghosts; st.fruits += s.fruits; st.levels += this.levelsCleared;
+      st.deaths += s.deaths; st.powerups += s.powerups; st.bestLevel = Math.max(st.bestLevel, g.level);
+      st.bestCombo = Math.max(st.bestCombo, me.bestCombo); st.perfectLevels += this.perfectLevels; st.time += Math.round(g.time);
+      if (g.battle) { st.battles++; if (win) st.battleWins++; }
+      // rewards
+      let xp = Math.round(score / 100) + this.levelsCleared * 25 + (win ? 120 : 0) + (g.battle ? (4 - place) * 15 : 0);
+      let coins = Math.floor(score / 400) + me.coins + (win ? 40 : g.battle && place === 2 ? 15 : 0);
+      if (this.practice) { xp = Math.round(xp / 4); coins = Math.floor(coins / 4); }
+      // daily
+      if (g.mode === 'daily' && !this.practice) {
+        const d = p.daily;
+        d.streak = d.last === yesterday() ? d.streak + 1 : d.last === today ? d.streak : 1;
+        d.last = today;
+        d.history[today] = { score, level: g.level };
+      }
+      // high score table
+      let tablePos = 0, best = false;
+      if (!this.practice) {
+        const list = p.scores[g.mode];
+        const prevBest = list.length ? list[0].score : 0;
+        list.push({ name: p.name || 'PLAYER', score, level: g.level, date: today });
+        list.sort((a, b) => b.score - a.score);
+        list.length = Math.min(list.length, 10);
+        best = score > prevBest && score > 0;
+        const all = list.map(x => x.score).concat(PM.CPU_SCORES[g.mode].map(c => c[1])).sort((a, b) => b - a);
+        tablePos = all.indexOf(score) + 1;
+      }
+      // missions
+      const ms = p.missions, finished = [];
+      if (ms.date !== today) this.ensureMissions();
+      for (const m of ms.list) {
+        if (m.done) continue;
+        switch (m.id) {
+          case 'ghosts': m.progress += s.ghosts; break;
+          case 'fruits': m.progress += s.fruits; break;
+          case 'levels': m.progress += this.levelsCleared; break;
+          case 'score': m.progress = Math.max(m.progress, score); break;
+          case 'powerups': m.progress += s.powerups; break;
+          case 'battle': m.progress += win ? 1 : 0; break;
+          case 'dots': m.progress += s.dots; break;
+          case 'combo': m.progress = Math.max(m.progress, me.bestCombo); break;
+        }
+        if (m.progress >= m.n) { m.done = true; coins += m.reward; finished.push(m); }
+      }
+      // achievements
+      const got = [];
+      const award = (id, cond) => { if (cond && !p.ach[id]) { p.ach[id] = Date.now(); got.push(PM.ACHIEVEMENTS.find(a => a.id === id)); } };
+      award('first', true);
+      award('level5', !g.battle && g.level >= 5);
+      award('level10', !g.battle && g.level >= 10);
+      award('ghost4', s.ghost4 > 0);
+      award('ghosts100', st.ghosts >= 100);
+      award('fruit10', st.fruits >= 10);
+      award('score50k', !g.battle && score >= 50000);
+      award('score100k', !g.battle && score >= 100000);
+      award('perfect', this.perfectLevels > 0);
+      award('battle_win', win);
+      award('battle_hard', win && g.pacs.length === 4 && p.botSkill === 'hard');
+      award('combo50', me.bestCombo >= 50);
+      award('power20', st.powerups >= 20);
+      award('shock3', this.shock3);
+      award('insane', this.insaneClear);
+      award('daily3', p.daily.streak >= 3);
+      const lvlBefore = PM.levelOf(p.xp);
+      p.xp += xp; p.coins += coins;
+      this.save();
+      this.renderProfile();
+      const lvl = PM.levelOf(p.xp), a = PM.xpFor(lvl), b = PM.xpFor(lvl + 1);
+      if (win || best) PM.Audio.sfx('extraLife');
+
+      const title = g.battle ? (win ? 'VICTORY!' : ['', '1ST', '2ND', '3RD', '4TH'][place] + ' PLACE')
+        : g.mode === 'daily' ? 'DAILY RUN OVER' : 'GAME OVER';
+      const sub = [PM.MODES[g.mode].name + (g.mode === 'x27' ? ' · ' + PM.DIFFICULTY[g.diffId].name : '') + (g.battle ? ' · ' + PM.BOT_SKILL[p.botSkill].name + ' AI' : ' · Level ' + g.level)];
+      if (best) sub.push('🎉 New personal best!');
+      if (tablePos && tablePos <= 10) sub.push('#' + tablePos + ' on the high score table');
+      if (this.practice) sub.push('Practice run (today\'s Daily already counted)');
+      const kpis = g.battle
+        ? [[fmt(s.dots), 'Dots'], [s.ghosts, 'Ghosts'], [s.rivals, 'Rivals eaten'], [s.deaths, 'Times caught']]
+        : [[g.level, 'Level'], [fmt(s.dots), 'Dots'], [s.ghosts, 'Ghosts'], [g.features ? me.bestCombo : s.fruits, g.features ? 'Best combo' : 'Fruits']];
+      const table = g.battle ? `<table class="table"><tr><th>#</th><th>PLAYER</th><th class="num">SCORE</th></tr>${rank.map((q, i) =>
+        `<tr class="${q.isPlayer ? 'me' : ''}"><td>${i + 1}</td><td><span class="swatch" style="background:${PM.Draw.pacColor(q.color, 0)}"></span>${q.isPlayer ? esc(p.name || 'YOU') : esc(q.name) + ' <small style="opacity:.6">' + PM.PERSONALITIES[q.persId].name + '</small>'}</td><td class="num">${fmt(q.score)}</td></tr>`).join('')}</table>` : '';
+      const rewards = [`<span>+${xp} XP</span>`, `<span class="gold">+${coins} 🪙</span>`]
+        .concat(finished.map(m => `<span class="green">✓ ${esc(this.missionText(m))} +${m.reward}🪙</span>`))
+        .concat(got.map(x => `<span class="gold">${x.icon} ${esc(x.name)}</span>`));
+      this.showModal(`
+        <p class="res-title">${title}</p>
+        <div class="big-score">${fmt(score)}</div>
+        <p class="res-sub">${sub.map(esc).join(' · ')}</p>
+        ${table}
+        <div class="kpis">${kpis.map(k => `<div class="kpi"><b>${k[0]}</b><span>${k[1]}</span></div>`).join('')}</div>
+        <div class="rewards">${rewards.join('')}</div>
+        <div class="lvl"><span>Lv ${lvl}</span><span class="xpbar"><i style="width:${Math.round((p.xp - a) / (b - a) * 100)}%"></i></span><span>${lvl > lvlBefore ? '⬆ LEVEL UP!' : PM.titleOf(lvl)}</span></div>
+        <div class="row-btns">
+          ${g.mode === 'daily' ? '<button class="btn cyan" id="r-share">📋 Share</button>' : ''}
+          <button class="btn play" id="r-again">PLAY AGAIN</button>
+          <button class="btn" id="r-menu">Menu</button>
+        </div>`, () => this.toMenu());
+      $('r-again').onclick = () => { this.closeModal(true); this.start(g.mode); };
+      $('r-menu').onclick = () => this.closeModal();
+      if ($('r-share')) $('r-share').onclick = () => this.share(score, g);
+      setTimeout(() => $('r-again') && $('r-again').focus(), 60);
+      for (const x of got) this.toast(x.icon + ' Achievement: ' + x.name, 'gold');
+    },
+    share(score, g) {
+      const s = g.player.stats;
+      const text = `PAC-MAN 2027* Daily Run ${PM.dateKey()}\n🟡 ${fmt(score)} pts · Level ${g.level}\n👻 ${s.ghosts} ghosts · 🍒 ${s.fruits} fruits · ⚡ ${s.powerups} power-ups` +
+        (/^https?:/.test(location.href) ? '\n' + location.href.split('#')[0] : '');
+      const done = () => this.toast('📋 Copied! Paste it anywhere.');
+      const fallback = () => {
+        const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select();
+        try { document.execCommand('copy'); done(); } catch (e) { this.toast('Could not copy'); }
+        t.remove();
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+    },
+
+    /* ---------------- modals ---------------- */
+    showModal(html, onClose) {
+      $('modal-body').innerHTML = html;
+      $('modal').classList.remove('hidden');
+      $('modal').querySelector('.sheet').scrollTop = 0;
+      this.onClose = onClose || null;
+    },
+    closeModal(silent) {
+      if ($('modal').classList.contains('hidden')) return;
+      $('modal').classList.add('hidden');
+      const cb = this.onClose; this.onClose = null;
+      if (this.garageTimer) { clearInterval(this.garageTimer); this.garageTimer = null; }
+      if (cb && !silent) cb();
+    },
+    open(which) {
+      PM.Audio.sfx('click');
+      const p = this.p;
+      if (which === 'help') {
+        const pu = PM.POWERUP_ORDER.map(k => `<div class="pu"><img src="${this.r.icon('power', k, 60)}" alt=""><span><b>${PM.POWERUPS[k].name}</b><small>${PM.POWERUPS[k].desc}</small></span></div>`).join('');
+        const gh = PM.GHOSTS.map((g, i) => `<div class="gh"><i style="background:${g.color}"></i><span><b>${g.name}</b> — ${['chases you directly and speeds up when few dots are left', 'aims four tiles ahead of you to cut you off', 'works with Blinky to trap you from the other side', 'chases you, but runs to his corner when he gets close'][i]}</span></div>`).join('');
+        this.showModal(`
+          <h2>How to play</h2>
+          <p>Eat every dot to clear the maze. Avoid the ghosts. Eat an <b>energizer</b> to turn them blue, then eat them for 200, 400, 800 and 1,600 points. Bonus fruit appears twice per level.</p>
+          <p><b>Keyboard:</b> arrows or WASD · P or Esc to pause · M to mute. <b>Touch:</b> swipe anywhere (or turn on the D-pad in Settings). <b>Gamepad:</b> D-pad or stick, Start to pause. Press a turn early and Pac-Man takes the corner the moment he can.</p>
+          <h3>Modes</h3>
+          <ul>${PM.MODE_ORDER.map(k => `<li><b>${PM.MODES[k].name}:</b> ${PM.MODES[k].desc}</li>`).join('')}</ul>
+          <h3>2027 power-ups</h3><div class="pu-list">${pu}</div>
+          <p>Eating dots without stopping builds a <b>combo</b>: every 20 dots raises the dot multiplier, up to x4.</p>
+          <h3>Level events</h3>
+          <ul>${Object.keys(PM.EVENTS).filter(k => k !== 'none').map(k => `<li><b>${PM.EVENTS[k].name}:</b> ${PM.EVENTS[k].desc}</li>`).join('')}</ul>
+          <h3>Know your ghosts</h3>${gh}
+          <p>Tip: turn on <b>Show ghost targets</b> in Settings to see where each ghost is heading.</p>`);
+      } else if (which === 'settings') {
+        const s = p.settings;
+        const sw = (id, on) => `<button class="switch${on ? ' on' : ''}" id="${id}" aria-pressed="${on}"></button>`;
+        this.showModal(`
+          <h2>Settings</h2>
+          <div class="set" style="display:block">Name<input id="s-name" class="text-in" maxlength="10" value="${esc(p.name)}" style="margin-top:8px" autocomplete="off" spellcheck="false"></div>
+          <div class="set">Sound effects${sw('s-sound', s.sound)}</div>
+          <div class="set">Menu music${sw('s-music', s.music)}</div>
+          <div class="set">Volume<input type="range" id="s-vol" min="0" max="1" step="0.05" value="${s.volume}"></div>
+          <div class="set">Touch controls<span class="seg" id="s-ctrl">${[['auto', 'Auto'], ['swipe', 'Swipe'], ['dpad', 'D-pad']].map(([v, l]) => `<button data-v="${v}" class="${s.controls === v ? 'sel' : ''}">${l}</button>`).join('')}</span></div>
+          <div class="set">Show ghost targets (training)${sw('s-targets', s.targets)}</div>
+          <div class="set">Screen shake & particles${sw('s-motion', s.motion)}</div>
+          <div class="set">Progress<button class="btn small ghost" id="s-reset">Reset everything</button></div>`);
+        $('s-name').addEventListener('input', e => { p.name = e.target.value.toUpperCase().replace(/[^A-Z0-9 _-]/g, '').slice(0, 10); this.save(); this.renderProfile(); });
+        const tog = (id, key) => { $(id).onclick = () => { s[key] = !s[key]; $(id).classList.toggle('on', s[key]); this.save(); this.applySettings(); }; };
+        tog('s-sound', 'sound'); tog('s-music', 'music'); tog('s-targets', 'targets'); tog('s-motion', 'motion');
+        $('s-vol').oninput = e => { s.volume = Number(e.target.value); PM.Audio.setVolume(s.volume); this.save(); };
+        $('s-ctrl').onclick = e => { const b = e.target.closest('button'); if (!b) return; s.controls = b.dataset.v; $('s-ctrl').querySelectorAll('button').forEach(x => x.classList.toggle('sel', x === b)); this.save(); this.layout(); };
+        let armed = false;
+        $('s-reset').onclick = e => {
+          if (!armed) { armed = true; e.target.textContent = 'Tap again to confirm'; return; }
+          this.p = PM.Store.reset(); this.ensureMissions(); this.save(); this.applySettings(); this.renderMenu(); this.renderProfile(); this.closeModal(true); this.toast('Progress reset');
+        };
+      } else if (which === 'scores') {
+        this.scoresTab = this.scoresTab || p.mode;
+        const render = () => {
+          const mode = this.scoresTab;
+          const rows = p.scores[mode].map(x => ({ name: x.name, score: x.score, level: x.level, me: true }))
+            .concat(PM.CPU_SCORES[mode].map(([n, sc]) => ({ name: n, score: sc, cpu: true })))
+            .sort((a, b) => b.score - a.score).slice(0, 10);
+          $('sc-body').innerHTML = `<table class="table"><tr><th>#</th><th>NAME</th><th class="num">LEVEL</th><th class="num">SCORE</th></tr>${rows.map((r, i) =>
+            `<tr class="${r.me ? 'me' : 'cpu'}"><td>${i + 1}</td><td>${esc(r.name)}${r.cpu ? ' <small>🤖 CPU</small>' : ''}</td><td class="num">${r.level || '–'}</td><td class="num">${fmt(r.score)}</td></tr>`).join('')}</table>`;
+          $('sc-tabs').querySelectorAll('button').forEach(b => b.classList.toggle('sel', b.dataset.m === mode));
+        };
+        this.showModal(`<h2>High scores</h2><div class="tabs" id="sc-tabs">${PM.MODE_ORDER.map(m => `<button data-m="${m}">${PM.MODES[m].name}</button>`).join('')}</div><div id="sc-body"></div>
+          <p style="font-size:12px">Scores are saved in this browser. 🤖 CPU entries are arcade legends to beat.</p>`);
+        $('sc-tabs').onclick = e => { const b = e.target.closest('button'); if (b) { this.scoresTab = b.dataset.m; render(); } };
+        render();
+      } else if (which === 'missions') {
+        this.ensureMissions();
+        p.missions.seen = PM.dateKey(); this.save(); this.renderMenu();
+        const ms = p.missions.list;
+        this.showModal(`<h2>Daily missions</h2>
+          ${ms.map(m => `<div class="mission${m.done ? ' done' : ''}"><span style="font-size:22px">${m.done ? '✅' : '🎯'}</span><span class="mtxt"><b>${esc(this.missionText(m))}</b><span class="bar"><i style="width:${Math.min(100, m.progress / m.n * 100)}%"></i></span></span><span class="rw">${m.done ? 'DONE' : '+' + m.reward + '🪙'}</span></div>`).join('')}
+          <p>New missions every day. Progress counts in every mode; coins are added automatically when a mission is done.</p>
+          <h3>Daily Run</h3><p>Streak: <b>${p.daily.streak} day${p.daily.streak === 1 ? '' : 's'}</b> 🔥 · Today: ${p.daily.history[PM.dateKey()] ? fmt(p.daily.history[PM.dateKey()].score) + ' points' : 'not played yet'}</p>`);
+      } else if (which === 'profile') {
+        const s = p.stats, lvl = PM.levelOf(p.xp);
+        this.showModal(`<h2>${esc(p.name || 'PLAYER')}</h2>
+          <div class="lvl"><span>Lv ${lvl} · ${PM.titleOf(lvl)}</span><span class="xpbar"><i style="width:${Math.round((p.xp - PM.xpFor(lvl)) / (PM.xpFor(lvl + 1) - PM.xpFor(lvl)) * 100)}%"></i></span><span>${fmt(p.xp)} XP</span></div>
+          <div class="kpis">
+            ${[[s.games, 'Games'], [fmt(s.dots), 'Dots'], [fmt(s.ghosts), 'Ghosts'], [s.fruits, 'Fruits'], [s.levels, 'Levels cleared'], [s.bestLevel, 'Best level'], [s.battleWins + '/' + s.battles, 'Battles won'], [Math.round(s.time / 60) + 'm', 'Play time']]
+              .map(k => `<div class="kpi"><b>${k[0]}</b><span>${k[1]}</span></div>`).join('')}
+          </div>
+          <h3>Achievements · ${Object.keys(p.ach).length}/${PM.ACHIEVEMENTS.length}</h3>
+          <div class="ach-grid">${PM.ACHIEVEMENTS.map(a => `<div class="ach${p.ach[a.id] ? ' got' : ''}"><span class="i">${a.icon}</span><span><b>${a.name}</b><small>${a.desc}</small></span></div>`).join('')}</div>
+          <div class="row-btns"><button class="btn" data-open2="settings">Change name</button></div>`);
+        $('modal-body').querySelector('[data-open2]').onclick = () => this.open('settings');
+      } else if (which === 'garage') this.openGarage();
+    },
+
+    /* ---------------- garage & shop ---------------- */
+    unlockState(cat, item) {
+      const p = this.p;
+      if (p.owned[cat].includes(item.id)) return { owned: true };
+      if (!item.unlock) return { owned: true };
+      if (item.unlock.coins) return { price: item.unlock.coins };
+      const a = PM.ACHIEVEMENTS.find(x => x.id === item.unlock.ach);
+      if (p.ach[item.unlock.ach]) { p.owned[cat].push(item.id); return { owned: true }; }
+      return { ach: a };
+    },
+    openGarage() {
+      this.garageTab = this.garageTab || 'color';
+      this.showModal(`<h2>Garage</h2>
+        <div class="garage-top"><canvas id="g-prev" width="120" height="120"></canvas>
+          <div><p style="margin:0">Spend coins from games and missions. Some items unlock with achievements.</p><p class="coins" style="display:inline-block;margin:8px 0 0" id="g-coins"></p></div></div>
+        <div class="tabs" id="g-tabs">${PM.GARAGE_TABS.map(([k, l]) => `<button data-t="${k}">${l}</button>`).join('')}</div>
+        <div class="items" id="g-items"></div>`);
+      $('g-tabs').onclick = e => { const b = e.target.closest('button'); if (b) { this.garageTab = b.dataset.t; this.renderGarage(); } };
+      $('g-items').onclick = e => { const b = e.target.closest('.item'); if (b) this.garageClick(b); };
+      this.renderGarage();
+      this.garageTimer = setInterval(() => { if ($('g-prev')) this.drawPacPreview($('g-prev'), 120, this.equipColor(), this.p.equip.hat, this.p.equip.trail); }, 100);
+    },
+    renderGarage() {
+      const p = this.p, cat = this.garageTab;
+      $('g-tabs').querySelectorAll('button').forEach(b => b.classList.toggle('sel', b.dataset.t === cat));
+      $('g-coins').textContent = '🪙 ' + fmt(p.coins);
+      $('g-items').innerHTML = PM.CATALOG[cat].map(it => {
+        const st = this.unlockState(cat, it), eq = p.equip[cat] === it.id;
+        const tag = st.owned ? (eq ? 'Equipped' : 'Owned') : st.price ? `<small class="price">🪙 ${fmt(st.price)}</small>` : `<small>🏆 ${esc(st.ach.name)}</small>`;
+        return `<button class="item${eq ? ' eq' : ''}${st.owned ? '' : ' locked'}" data-id="${it.id}"><canvas data-c="${cat}" data-i="${it.id}"></canvas>${esc(it.name)}${st.owned ? `<small>${tag}</small>` : tag}</button>`;
+      }).join('');
+      $('g-items').querySelectorAll('canvas').forEach(c => {
+        const i = c.dataset.i;
+        if (cat === 'color') this.drawPacPreview(c, 54, this.equipColor(i), 'none');
+        else if (cat === 'hat') this.drawPacPreview(c, 54, this.equipColor(), i);
+        else if (cat === 'trail') this.drawPacPreview(c, 54, this.equipColor(), 'none', i);
+        else this.drawPacPreview(c, 54, null, null, null, i);
+      });
+      this.drawPacPreview($('g-prev'), 120, this.equipColor(), p.equip.hat, p.equip.trail);
+      this.renderProfile();
+    },
+    garageClick(btn) {
+      const p = this.p, cat = this.garageTab, it = PM.CATALOG[cat].find(x => x.id === btn.dataset.id);
+      const st = this.unlockState(cat, it);
+      if (st.owned) { p.equip[cat] = it.id; PM.Audio.sfx('click'); }
+      else if (st.price) {
+        if (p.coins < st.price) { this.nope(btn, 'Need ' + fmt(st.price - p.coins) + ' more coins'); return; }
+        p.coins -= st.price; p.owned[cat].push(it.id); p.equip[cat] = it.id;
+        PM.Audio.sfx('coin'); this.toast('Unlocked ' + it.name + '!', 'gold');
+      } else { this.nope(btn, 'Unlock: ' + st.ach.desc); return; }
+      this.save(); this.renderGarage(); this.renderMenu();
+    },
+    nope(btn, msg) { btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake'); PM.Audio.sfx('hurt'); this.toast(msg); }
+  };
+
+  PM.App = App;
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => App.boot());
+  else App.boot();
+})(window.PM = window.PM || {});
+</script>
+</body>
+</html>

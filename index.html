@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>PAC-MAN 2027*</title>
+  <meta name="description" content="The arcade legend rebuilt: arcade-perfect Classic, evolving 2027 mazes with power-ups, Battle against humanlike AI rivals and a Daily Run. Free, no sign-up, works offline.">
+  <meta name="theme-color" content="#07061a">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2307061a'/%3E%3Cpath d='M32 32 L56 18 A28 28 0 1 0 56 46 Z' fill='%23ffe14d'/%3E%3Ccircle cx='30' cy='18' r='4' fill='%2307061a'/%3E%3C/svg%3E">
+  <!-- The only external host is jsDelivr (fonts). Everything else is in this package. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/orbitron@5/700.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/orbitron@5/900.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/rubik@5/500.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/rubik@5/700.css" media="print" onload="this.media='all'">
+  <!-- critical sizing inline: the page always fills its window or iframe and never scrolls -->
+  <style>html,body{margin:0;width:100%;height:100%;overflow:hidden;position:fixed;inset:0;background:#07061a}</style>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- ================= PLAY AREA ================= -->
+    <div id="stage">
+      <div id="hud-top" class="hud hidden">
+        <div class="hbox"><small>SCORE</small><b id="h-score">0</b></div>
+        <div class="hbox mid"><small id="h-mid-label">HIGH SCORE</small><b id="h-mid">0</b></div>
+        <div class="hbox right"><small id="h-right-label">LEVEL</small><b id="h-right">1</b></div>
+        <button id="pause-btn" class="icon-btn small" aria-label="Pause">❚❚</button>
+      </div>
+      <div id="board-wrap">
+        <canvas id="cv" aria-label="Game board"></canvas>
+        <div id="banner" class="banner hidden" aria-live="polite"><b id="banner-title"></b><span id="banner-sub"></span></div>
+      </div>
+      <div id="hud-bot" class="hud hidden">
+        <div id="h-lives" class="lives" aria-label="Lives"></div>
+        <div id="h-powers" class="powers"></div>
+        <div id="h-combo" class="combo hidden"><b id="h-combo-x">x2</b><i><em id="h-combo-bar"></em></i></div>
+        <div id="h-fruits" class="fruits"></div>
+      </div>
+      <div id="dpad" class="dpad hidden" aria-hidden="true">
+        <button data-d="0" class="up">▲</button><button data-d="1" class="left">◀</button>
+        <button data-d="3" class="right">▶</button><button data-d="2" class="down">▼</button>
+      </div>
+    </div>
+
+    <!-- ================= MENU ================= -->
+    <div id="menu" class="screen">
+      <header class="topbar">
+        <button id="profile" class="profile" aria-label="Your profile">
+          <canvas id="avatar" width="64" height="64"></canvas>
+          <span class="pinfo"><b id="p-name">PLAYER</b><small id="p-level">Lv 1 · Rookie</small><span class="xpbar"><i id="p-xp"></i></span></span>
+        </button>
+        <span id="coins" class="coins" title="Coins">🪙 0</span>
+        <span class="grow"></span>
+        <button class="icon-btn" data-open="missions" aria-label="Daily missions" title="Daily missions">🎯<i id="mission-dot" class="dot hidden"></i></button>
+        <button class="icon-btn" data-open="garage" aria-label="Garage and shop" title="Garage & shop">🛒</button>
+        <button class="icon-btn" data-open="scores" aria-label="High scores" title="High scores">🏆</button>
+        <button class="icon-btn" data-open="help" aria-label="How to play" title="How to play">❔</button>
+        <button class="icon-btn" data-open="settings" aria-label="Settings" title="Settings">⚙️</button>
+        <button class="icon-btn" id="fs-btn" aria-label="Full screen" title="Full screen">⛶</button>
+      </header>
+      <main class="menu-main">
+        <h1 class="logo" aria-label="PAC-MAN 2027"><span class="l1">PAC-MAN</span><span class="l2">2027<sup>*</sup></span></h1>
+        <p class="tagline">The arcade legend, rebuilt for the future.</p>
+        <div class="modes" id="modes"></div>
+        <p class="mode-desc" id="mode-desc"></p>
+        <div class="opts" id="opts"></div>
+        <button id="play" class="btn play">PLAY ▸</button>
+        <p class="hint" id="key-hint">Arrows / WASD to move · P to pause</p>
+      </main>
+      <footer class="foot">*Fan-made tribute. PAC-MAN is a trademark of Bandai Namco Entertainment Inc. This game is not affiliated with or endorsed by them.</footer>
+    </div>
+
+    <!-- ================= PAUSE ================= -->
+    <div id="pause" class="overlay hidden" role="dialog" aria-modal="true">
+      <div class="sheet small">
+        <h2>Paused</h2>
+        <div class="col-btns">
+          <button class="btn play" id="resume">RESUME</button>
+          <button class="btn" id="restart">Restart</button>
+          <button class="btn" data-open="settings">Settings</button>
+          <button class="btn ghost" id="quit">Quit to menu</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MODAL ================= -->
+    <div id="modal" class="overlay hidden" role="dialog" aria-modal="true">
+      <div class="sheet"><button class="close" aria-label="Close">✕</button><div id="modal-body"></div></div>
+    </div>
+    <div id="toasts" aria-live="polite"></div>
+  </div>
+  <noscript><p style="color:#fff;text-align:center;padding:40px;font-family:sans-serif">PAC-MAN 2027* needs JavaScript.</p></noscript>
+  <script src="js/util.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/maze.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/sim.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/ui.js"></script>
+</body>
+</html>
